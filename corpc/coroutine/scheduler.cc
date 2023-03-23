@@ -2,7 +2,7 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#include "../include/scheduler.h"
+#include "scheduler.h"
 
 #include <sys/sysinfo.h>
 

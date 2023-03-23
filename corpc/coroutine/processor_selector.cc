@@ -2,8 +2,8 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#include "../include/processor_selector.h"
-#include "../include/processor.h"
+#include "processor_selector.h"
+#include "processor.h"
 
 using namespace cppCo;
 

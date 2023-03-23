@@ -13,10 +13,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -pipe -std=c++11 -fno-except
 include_directories(${PROJECT_SOURCE_DIR})
 
 # 定义SRC变量，其值为当前目录下所有的源代码文件
-aux_source_directory(../src SRC)
+aux_source_directory(../corpc/coroutine COR)
 
 # 生成可执行文件
-add_executable(test main.cc ${SRC})
+add_executable(test main.cc ${COR})
 target_link_libraries(test pthread)
 
 

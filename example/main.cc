@@ -5,10 +5,10 @@
 #include <iostream>
 #include <sys/sysinfo.h>
 
-#include "../include/processor.h"
-#include "../include/co_api.h"
-#include "../include/socket.h"
-#include "../include/mutex.h"
+#include "../corpc/coroutine/processor.h"
+#include "../corpc/coroutine/co_api.h"
+#include "../corpc/coroutine/socket.h"
+#include "../corpc/coroutine/mutex.h"
 
 using namespace cppCo;
 
@@ -97,6 +97,7 @@ void multi_acceptor_server_test()
 							char buf[1024];
 							if (conn->read((void *)buf, 1024) > 0)
 							{
+								std::cout << buf << std::endl;
 								conn->send(hello.c_str(), hello.size());
 								cppCo::co_sleep(50); // 需要等一下，否则还没发送完毕就关闭了
 							}

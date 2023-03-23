@@ -2,9 +2,9 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#include "../include/epoller.h"
-#include "../include/coroutine.h"
-#include "../include/parameter.h"
+#include "epoller.h"
+#include "coroutine.h"
+#include "parameter.h"
 
 #include <string.h>
 #include <errno.h>

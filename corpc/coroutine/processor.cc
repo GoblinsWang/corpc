@@ -2,9 +2,9 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#include "../include/processor.h"
-#include "../include/parameter.h"
-#include "../include/spinlock_guard.h"
+#include "processor.h"
+#include "parameter.h"
+#include "spinlock_guard.h"
 
 #include <sys/epoll.h>
 #include <unistd.h>

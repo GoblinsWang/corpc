@@ -2,9 +2,9 @@
     @author: Wangzhiming
     @date: 2022-10-29
 ***/
-#include "../include/mutex.h"
-#include "../include/scheduler.h"
-#include "../include/spinlock_guard.h"
+#include "mutex.h"
+#include "scheduler.h"
+#include "spinlock_guard.h"
 
 using namespace cppCo;
 

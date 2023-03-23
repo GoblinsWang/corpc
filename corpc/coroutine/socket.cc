@@ -2,8 +2,8 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#include "../include/socket.h"
-#include "../include/scheduler.h"
+#include "socket.h"
+#include "scheduler.h"
 
 #include <netinet/in.h>
 #include <netinet/tcp.h>

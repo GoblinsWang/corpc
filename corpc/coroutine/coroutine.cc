@@ -2,9 +2,9 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#include "../include/coroutine.h"
-#include "../include/processor.h"
-#include "../include/parameter.h"
+#include "coroutine.h"
+#include "processor.h"
+#include "parameter.h"
 
 using namespace cppCo;
 

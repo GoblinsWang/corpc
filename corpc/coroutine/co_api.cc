@@ -2,7 +2,7 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#include "../include/co_api.h"
+#include "co_api.h"
 
 void cppCo::co_go(std::function<void()> &&func, size_t stackSize, int tid)
 {
