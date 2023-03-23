@@ -2,11 +2,12 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#pragma once
+#ifndef CORPC_COROUTINE_OBJPOOL_H
+#define CORPC_COROUTINE_OBJPOOL_H
 #include <type_traits>
 #include "mempool.h"
 
-namespace cppCo
+namespace corpc
 {
 
 	template <class T>
@@ -83,3 +84,5 @@ namespace cppCo
 	}
 
 }
+
+#endif

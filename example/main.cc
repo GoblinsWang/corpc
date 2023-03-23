@@ -9,17 +9,18 @@
 #include "../corpc/coroutine/co_api.h"
 #include "../corpc/coroutine/socket.h"
 #include "../corpc/coroutine/mutex.h"
+#include "../corpc/log/logger.h"
 
-using namespace cppCo;
+using namespace corpc;
 
-// cppCo http response with one acceptor test
+// corpc http response with one acceptor test
 // 只有一个acceptor的服务
 void single_acceptor_server_test()
 {
-	cppCo::co_go(
+	corpc::co_go(
 		[]
 		{
-			cppCo::Socket listener;
+			corpc::Socket listener;
 			if (listener.isUseful())
 			{
 				listener.setTcpNoDelay(true);
@@ -34,9 +35,9 @@ void single_acceptor_server_test()
 			}
 			while (1)
 			{
-				cppCo::Socket *conn = new cppCo::Socket(listener.accept());
+				corpc::Socket *conn = new corpc::Socket(listener.accept());
 				conn->setTcpNoDelay(true);
-				cppCo::co_go(
+				corpc::co_go(
 					[conn]
 					{
 						std::vector<char> buf;
@@ -44,7 +45,7 @@ void single_acceptor_server_test()
 						while (1)
 						{
 							auto readNum = conn->read((void *)&(buf[0]), buf.size());
-							std::string ok = "HTTP/1.0 200 OK\r\nServer: cppCo/0.1.0\r\nContent-Type: text/html\r\n\r\n";
+							std::string ok = "HTTP/1.0 200 OK\r\nServer: corpc/0.1.0\r\nContent-Type: text/html\r\n\r\n";
 							if (readNum < 0)
 							{
 								break;
@@ -56,24 +57,24 @@ void single_acceptor_server_test()
 								break;
 							}
 						}
-						cppCo::co_sleep(100); // 需要等一下，否则还没发送完毕就关闭了
+						corpc::co_sleep(100); // 需要等一下，否则还没发送完毕就关闭了
 						delete conn;
 					});
 			}
 		});
 }
 
-// cppCo http response with multi acceptor test
+// corpc http response with multi acceptor test
 // 每条线程一个acceptor的服务
 void multi_acceptor_server_test()
 {
 	auto tCnt = ::get_nprocs_conf();
 	for (int i = 0; i < tCnt; ++i)
 	{
-		cppCo::co_go(
-			[]
+		corpc::co_go(
+			[i]
 			{
-				cppCo::Socket listener;
+				corpc::Socket listener;
 				if (listener.isUseful())
 				{
 					listener.setTcpNoDelay(true);
@@ -85,21 +86,23 @@ void multi_acceptor_server_test()
 					}
 					listener.listen();
 				}
+				LogDebug(" 初始化完毕，正在监听" << i);
 				while (1)
 				{
-					cppCo::Socket *conn = new cppCo::Socket(listener.accept());
+					corpc::Socket *conn = new corpc::Socket(listener.accept());
+					LogDebug("accept " << i);
 					conn->setTcpNoDelay(true);
-					cppCo::co_go(
+					corpc::co_go(
 						[conn]
 						{
-							std::string hello("HTTP/1.0 200 OK\r\nServer: cppCo/0.1.0\r\nContent-Length: 72\r\nContent-Type: text/html\r\n\r\n<HTML><TITLE>hello</TITLE>\r\n<BODY><P>hello word!\r\n</BODY></HTML>\r\n");
+							std::string hello("HTTP/1.0 200 OK\r\nServer: corpc/0.1.0\r\nContent-Length: 72\r\nContent-Type: text/html\r\n\r\n<HTML><TITLE>hello</TITLE>\r\n<BODY><P>hello word!\r\n</BODY></HTML>\r\n");
 							// std::string hello("<HTML><TITLE>hello</TITLE>\r\n<BODY><P>hello word!\r\n</BODY></HTML>\r\n");
 							char buf[1024];
 							if (conn->read((void *)buf, 1024) > 0)
 							{
-								std::cout << buf << std::endl;
+								// LogDebug(buf);
 								conn->send(hello.c_str(), hello.size());
-								cppCo::co_sleep(50); // 需要等一下，否则还没发送完毕就关闭了
+								corpc::co_sleep(50); // 需要等一下，否则还没发送完毕就关闭了
 							}
 							delete conn;
 						});
@@ -112,14 +115,14 @@ void multi_acceptor_server_test()
 // 作为客户端的测试，可配合上述server测试
 void client_test()
 {
-	cppCo::co_go(
+	corpc::co_go(
 		[]
 		{
 			char buf[1024];
 			while (1)
 			{
-				cppCo::co_sleep(2000);
-				cppCo::Socket s;
+				corpc::co_sleep(2000);
+				corpc::Socket s;
 				s.connect("127.0.0.1", 8099);
 				s.send("ping", 4);
 				s.read(buf, 1024);
@@ -129,39 +132,39 @@ void client_test()
 }
 
 // 读写锁测试
-void mutex_test(cppCo::RWMutex &mu)
+void mutex_test(corpc::RWMutex &mu)
 {
 	for (int i = 0; i < 10; ++i)
 		if (i < 5)
 		{
-			cppCo::co_go(
+			corpc::co_go(
 				[&mu, i]
 				{
 					mu.rlock();
 					std::cout << i << " : start reading" << std::endl;
-					cppCo::co_sleep(50 + i);
+					corpc::co_sleep(50 + i);
 					std::cout << i << " : finish reading" << std::endl;
 					mu.runlock();
 					mu.wlock();
 					std::cout << i << " : start writing" << std::endl;
-					cppCo::co_sleep(50);
+					corpc::co_sleep(50);
 					std::cout << i << " : finish writing" << std::endl;
 					mu.wunlock();
 				});
 		}
 		else
 		{
-			cppCo::co_go(
+			corpc::co_go(
 				[&mu, i]
 				{
 					mu.wlock();
 					std::cout << i << " : start writing" << std::endl;
-					cppCo::co_sleep(50);
+					corpc::co_sleep(50);
 					std::cout << i << " : finish writing" << std::endl;
 					mu.wunlock();
 					mu.rlock();
 					std::cout << i << " : start reading" << std::endl;
-					cppCo::co_sleep(50);
+					corpc::co_sleep(50);
 					std::cout << i << " : finish reading" << std::endl;
 					mu.runlock();
 				});
@@ -170,12 +173,12 @@ void mutex_test(cppCo::RWMutex &mu)
 
 int main()
 {
-	cppCo::RWMutex mu;
+	corpc::RWMutex mu;
 	// mutex_test(mu);
 	// single_acceptor_server_test();
 	multi_acceptor_server_test();
 	// client_test();
-	cppCo::sche_join();
+	corpc::sche_join();
 	std::cout << "end" << std::endl;
 	return 0;
 }

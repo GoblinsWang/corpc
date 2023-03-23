@@ -2,14 +2,15 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#pragma once
+#ifndef CORPC_COROUTINE_SCHEDULER_H
+#define CORPC_COROUTINE_SCHEDULER_H
 #include <vector>
 #include <functional>
 
 #include "processor.h"
 #include "processor_selector.h"
 
-namespace cppCo
+namespace corpc
 {
 
 	class Scheduler
@@ -49,3 +50,4 @@ namespace cppCo
 	};
 
 }
+#endif

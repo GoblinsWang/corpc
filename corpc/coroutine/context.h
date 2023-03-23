@@ -2,12 +2,13 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#pragma once
+#ifndef CORPC_COROUTINE_CONTEXT_H
+#define CORPC_COROUTINE_CONTEXT_H
 #include "utils.h"
 #include "parameter.h"
 #include <ucontext.h>
 
-namespace cppCo
+namespace corpc
 {
 
 	class Processor;
@@ -50,3 +51,5 @@ namespace cppCo
 	};
 
 }
+
+#endif

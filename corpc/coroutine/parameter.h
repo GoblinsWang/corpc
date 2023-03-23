@@ -2,10 +2,11 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#pragma once
+#ifndef CORPC_COROUTINE_PARAMETER_H
+#define CORPC_COROUTINE_PARAMETER_H
 #include <stddef.h>
 
-namespace cppCo
+namespace corpc
 {
 	namespace parameter
 	{
@@ -26,3 +27,5 @@ namespace cppCo
 	}
 
 }
+
+#endif

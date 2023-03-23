@@ -6,7 +6,7 @@
 #include "parameter.h"
 #include <stdlib.h>
 
-using namespace cppCo;
+using namespace corpc;
 
 Context::Context(size_t stackSize)
 	: pStack_(nullptr), stackSize_(stackSize)

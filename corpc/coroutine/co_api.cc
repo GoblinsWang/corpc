@@ -3,39 +3,42 @@
 	@date: 2022-10-29
 ***/
 #include "co_api.h"
+#include "../log/logger.h"
 
-void cppCo::co_go(std::function<void()> &&func, size_t stackSize, int tid)
+void corpc::co_go(std::function<void()> &&func, size_t stackSize, int tid)
 {
 	if (tid < 0)
 	{
-		cppCo::Scheduler::getScheduler()->createNewCo(std::move(func), stackSize);
+		// LogTrace("随机选择processor");
+		corpc::Scheduler::getScheduler()->createNewCo(std::move(func), stackSize);
 	}
 	else
 	{
-		tid %= cppCo::Scheduler::getScheduler()->getProCnt();
-		cppCo::Scheduler::getScheduler()->getProcessor(tid)->goNewCo(std::move(func), stackSize);
+		// LogTrace("指定processor为" << tid);
+		tid %= corpc::Scheduler::getScheduler()->getProCnt();
+		corpc::Scheduler::getScheduler()->getProcessor(tid)->goNewCo(std::move(func), stackSize);
 	}
 }
 
-void cppCo::co_go(std::function<void()> &func, size_t stackSize, int tid)
+void corpc::co_go(std::function<void()> &func, size_t stackSize, int tid)
 {
 	if (tid < 0)
 	{
-		cppCo::Scheduler::getScheduler()->createNewCo(func, stackSize);
+		corpc::Scheduler::getScheduler()->createNewCo(func, stackSize);
 	}
 	else
 	{
-		tid %= cppCo::Scheduler::getScheduler()->getProCnt();
-		cppCo::Scheduler::getScheduler()->getProcessor(tid)->goNewCo(func, stackSize);
+		tid %= corpc::Scheduler::getScheduler()->getProCnt();
+		corpc::Scheduler::getScheduler()->getProcessor(tid)->goNewCo(func, stackSize);
 	}
 }
 
-void cppCo::co_sleep(Time time)
+void corpc::co_sleep(Time time)
 {
-	cppCo::Scheduler::getScheduler()->getProcessor(threadIdx)->wait(time);
+	corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->wait(time);
 }
 
-void cppCo::sche_join()
+void corpc::sche_join()
 {
-	cppCo::Scheduler::getScheduler()->join();
+	corpc::Scheduler::getScheduler()->join();
 }

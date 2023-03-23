@@ -2,7 +2,8 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#pragma once
+#ifndef CORPC_COROUTINE_SOCKET_H
+#define CORPC_COROUTINE_SOCKET_H
 
 #include "utils.h"
 #include "parameter.h"
@@ -15,7 +16,7 @@
 
 struct tcp_info;
 
-namespace cppCo
+namespace corpc
 {
 	/*
 		Socket类，创建的Socket对象默认都是非阻塞的
@@ -142,3 +143,5 @@ namespace cppCo
 	};
 
 }
+
+#endif

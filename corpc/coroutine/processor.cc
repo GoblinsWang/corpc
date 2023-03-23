@@ -9,7 +9,7 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
-using namespace cppCo;
+using namespace corpc;
 
 __thread int threadIdx = -1;
 

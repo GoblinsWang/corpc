@@ -2,7 +2,8 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#pragma once
+#ifndef CORPC_COROUTINE_PROCESSOR_H
+#define CORPC_COROUTINE_PROCESSOR_H
 #include <queue>
 #include <set>
 #include <mutex>
@@ -16,7 +17,7 @@
 
 extern __thread int threadIdx; // 每个线程都会有一份
 
-namespace cppCo
+namespace corpc
 {
 	enum processerStatus
 	{
@@ -120,3 +121,5 @@ namespace cppCo
 	};
 
 }
+
+#endif

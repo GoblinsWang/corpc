@@ -2,14 +2,15 @@
     @author: Wangzhiming
     @date: 2022-10-29
 ***/
-#pragma once
+#ifndef CORPC_COROUTINE_MUTEX_H
+#define CORPC_COROUTINE_MUTEX_H
 #include "coroutine.h"
 #include "spinlock.h"
 
 #include <atomic>
 #include <queue>
 
-namespace cppCo
+namespace corpc
 {
 
     enum muStatus
@@ -52,3 +53,5 @@ namespace cppCo
     };
 
 }
+
+#endif

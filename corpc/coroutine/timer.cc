@@ -11,7 +11,7 @@
 #include <string.h>
 #include <unistd.h>
 
-using namespace cppCo;
+using namespace corpc;
 
 Timer::Timer()
 	: timeFd_(-1)

@@ -2,13 +2,14 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#pragma once
+#ifndef CORPC_COROUTINE_MSTIME_H
+#define CORPC_COROUTINE_MSTIME_H
 #include <stdint.h>
 #include <time.h>
 
 struct timespec;
 
-namespace cppCo
+namespace corpc
 {
 
 	// 一年中每个月的天数，非闰年
@@ -79,3 +80,5 @@ namespace cppCo
 	}
 
 }
+
+#endif

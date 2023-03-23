@@ -2,7 +2,9 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#pragma once
+#ifndef CORPC_COROUTINE_TIMER_H
+#define CORPC_COROUTINE_TIMER_H
+
 #include "mstime.h"
 #include "utils.h"
 
@@ -14,7 +16,7 @@
 
 #define TIMER_DUMMYBUF_SIZE 1024
 
-namespace cppCo
+namespace corpc
 {
 	class Coroutine;
 	class Epoller;
@@ -60,3 +62,4 @@ namespace cppCo
 	};
 
 }
+#endif

@@ -6,7 +6,7 @@
 #include "processor.h"
 #include "parameter.h"
 
-using namespace cppCo;
+using namespace corpc;
 
 static void coWrapFunc(Processor *pP)
 {

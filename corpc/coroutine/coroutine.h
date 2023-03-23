@@ -2,12 +2,13 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#pragma once
+#ifndef CORPC_COROUTINE_COROUTINE_H
+#define CORPC_COROUTINE_COROUTINE_H
 #include <functional>
 #include "context.h"
 #include "utils.h"
 
-namespace cppCo
+namespace corpc
 {
 
 	enum coStatus
@@ -54,3 +55,5 @@ namespace cppCo
 	};
 
 }
+
+#endif

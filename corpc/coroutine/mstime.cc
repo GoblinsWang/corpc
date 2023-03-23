@@ -5,7 +5,7 @@
 #include "mstime.h"
 #include <sys/time.h>
 
-using namespace cppCo;
+using namespace corpc;
 
 Time Time::now()
 {

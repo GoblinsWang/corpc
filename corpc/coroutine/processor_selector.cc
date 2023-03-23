@@ -5,7 +5,7 @@
 #include "processor_selector.h"
 #include "processor.h"
 
-using namespace cppCo;
+using namespace corpc;
 
 Processor *ProcessorSelector::next()
 {

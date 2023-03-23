@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.6)
 
 project(
-    cppCo_example
+    corpc_example
     LANGUAGES C CXX        
 )
 
@@ -14,9 +14,10 @@ include_directories(${PROJECT_SOURCE_DIR})
 
 # 定义SRC变量，其值为当前目录下所有的源代码文件
 aux_source_directory(../corpc/coroutine COR)
+aux_source_directory(../corpc/log LOG)
 
 # 生成可执行文件
-add_executable(test main.cc ${COR})
+add_executable(test main.cc ${COR} ${LOG})
 target_link_libraries(test pthread)
 
 

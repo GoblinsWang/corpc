@@ -2,10 +2,11 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#pragma once
+#ifndef CORPC_COROUTINE_PROCESSOR_SELECTOR_H
+#define CORPC_COROUTINE_PROCESSOR_SELECTOR_H
 #include <vector>
 
-namespace cppCo
+namespace corpc
 {
 	class Processor;
 
@@ -38,3 +39,5 @@ namespace cppCo
 	};
 
 }
+
+#endif

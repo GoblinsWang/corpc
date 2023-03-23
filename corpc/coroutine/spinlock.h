@@ -2,11 +2,12 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#pragma once
+#ifndef CORPC_COROUTINE_SPINLOCK_H
+#define CORPC_COROUTINE_SPINLOCK_H
 #include <atomic>
 #include "utils.h"
 
-namespace cppCo
+namespace corpc
 {
 
 	// 配合std::atomic_int定义的二元信号量使用，为1表示资源可以使用，为0表示资源不可使用
@@ -41,3 +42,5 @@ namespace cppCo
 	};
 
 }
+
+#endif

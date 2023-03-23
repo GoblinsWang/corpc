@@ -2,6 +2,7 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
+
 #include "socket.h"
 #include "scheduler.h"
 
@@ -13,7 +14,7 @@
 #include <string.h>
 #include <sys/epoll.h>
 
-using namespace cppCo;
+using namespace corpc;
 
 Socket::~Socket()
 {
@@ -113,7 +114,7 @@ Socket Socket::accept()
 	{
 		return ret;
 	}
-	cppCo::Scheduler::getScheduler()->getProcessor(threadIdx)->waitEvent(sockfd_, EPOLLIN | EPOLLPRI | EPOLLRDHUP | EPOLLHUP);
+	corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->waitEvent(sockfd_, EPOLLIN | EPOLLPRI | EPOLLRDHUP | EPOLLHUP);
 	auto con(accept_raw());
 	if (con.isUseful())
 	{
@@ -134,7 +135,7 @@ ssize_t Socket::read(void *buf, size_t count)
 	{
 		return read(buf, count);
 	}
-	cppCo::Scheduler::getScheduler()->getProcessor(threadIdx)->waitEvent(sockfd_, EPOLLIN | EPOLLPRI | EPOLLRDHUP | EPOLLHUP);
+	corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->waitEvent(sockfd_, EPOLLIN | EPOLLPRI | EPOLLRDHUP | EPOLLHUP);
 	return ::read(sockfd_, buf, count);
 }
 
@@ -155,7 +156,7 @@ void Socket::connect(const char *ip, int port)
 	{
 		return connect(ip, port);
 	}
-	cppCo::Scheduler::getScheduler()->getProcessor(threadIdx)->waitEvent(sockfd_, EPOLLOUT);
+	corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->waitEvent(sockfd_, EPOLLOUT);
 	return connect(ip, port);
 }
 
@@ -168,7 +169,7 @@ ssize_t Socket::send(const void *buf, size_t count)
 	{
 		return count;
 	}
-	cppCo::Scheduler::getScheduler()->getProcessor(threadIdx)->waitEvent(sockfd_, EPOLLOUT);
+	corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->waitEvent(sockfd_, EPOLLOUT);
 	return send((char *)buf + sendIdx, count - sendIdx);
 }
 

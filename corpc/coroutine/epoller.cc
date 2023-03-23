@@ -11,7 +11,7 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
-using namespace cppCo;
+using namespace corpc;
 
 Epoller::Epoller()
 	: epollFd_(-1), activeEpollEvents_(parameter::epollerListFirstSize)

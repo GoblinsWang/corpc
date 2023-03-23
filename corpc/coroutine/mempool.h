@@ -2,11 +2,13 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#pragma once
+#ifndef CORPC_COROUTINE_MEMPOOL_H
+#define CORPC_COROUTINE_MEMPOOL_H
+
 #include "parameter.h"
 #include "utils.h"
 
-namespace cppCo
+namespace corpc
 {
 	struct MemBlockNode
 	{
@@ -102,3 +104,5 @@ namespace cppCo
 		_freeListHead = newNode;
 	}
 }
+
+#endif

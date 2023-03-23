@@ -2,14 +2,15 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#pragma once
+#ifndef CORPC_COROUTINE_EPOLLER_H
+#define CORPC_COROUTINE_EPOLLER_H
 #include "utils.h"
 
 #include <vector>
 
 struct epoll_event;
 
-namespace cppCo
+namespace corpc
 {
 	class Coroutine;
 
@@ -45,3 +46,4 @@ namespace cppCo
 	};
 
 }
+#endif
