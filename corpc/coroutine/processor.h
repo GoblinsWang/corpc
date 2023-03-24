@@ -8,17 +8,21 @@
 #include <set>
 #include <mutex>
 #include <thread>
+#include <memory>
+#include <map>
+#include <vector>
 #include "objpool.h"
 #include "spinlock.h"
 #include "context.h"
 #include "coroutine.h"
-#include "epoller.h"
+#include "../net/epoller.h"
 #include "timer.h"
-
-extern __thread int threadIdx; // 每个线程都会有一份
+#include "../log/logger.h"
 
 namespace corpc
 {
+	extern __thread int threadIdx; // 每个线程都会有一份
+
 	enum processerStatus
 	{
 		PRO_RUNNING = 0,
@@ -35,14 +39,23 @@ namespace corpc
 	class Processor
 	{
 	public:
-		Processor(int);
+		using ptr = std::shared_ptr<Processor>;
+
+		explicit Processor(int);
+
 		~Processor();
 
 		DISALLOW_COPY_MOVE_AND_ASSIGN(Processor);
 
-		// 运行一个新协程，该协程的函数是func
-		void goNewCo(std::function<void()> &&func, size_t stackSize);
-		void goNewCo(std::function<void()> &func, size_t stackSize);
+		void addEvent(int fd, epoll_event event, bool is_wakeup = true);
+
+		void delEvent(int fd, bool is_wakeup = true);
+
+		void addTask(std::function<void()> task, bool is_wakeup = true);
+
+		void addTask(std::vector<std::function<void()>> task, bool is_wakeup = true);
+
+		void addCoroutine(corpc::Coroutine *cor, bool is_wakeup = true);
 
 		void yield();
 
@@ -58,9 +71,6 @@ namespace corpc
 
 		void join();
 
-		// 等待fd上的ev事件返回
-		void waitEvent(int fd, int ev);
-
 		// 获取当前正在运行的协程
 		inline Coroutine *getCurRunningCo() { return pCurCoroutine_; };
 
@@ -72,18 +82,32 @@ namespace corpc
 
 		void goCoBatch(std::vector<Coroutine *> &cos);
 
-	private:
+	public:
+		static Processor *GetProcessor();
+
+		void addEventInLoopThread(int fd, epoll_event event);
+
+		void delEventInLoopThread(int fd);
+
 		// 恢复运行指定协程
 		void resume(Coroutine *);
 
 		inline void wakeUpEpoller();
 
+	private:
+		bool isLoopThread() const;
+
+	private:
 		// 该处理器的线程号
-		int tid_;
-
+		int m_tid;
 		int status_;
-
+		std::mutex m_mutex;
 		std::thread *pLoop_;
+
+		std::vector<int> m_fds; // alrady care events
+		std::map<int, epoll_event> m_pending_add_fds;
+		std::vector<int> m_pending_del_fds;
+		std::vector<std::function<void()>> m_pending_tasks;
 
 		// 新任务队列，使用双缓存队列
 		std::queue<Coroutine *> newCoroutines_[2];
@@ -108,12 +132,13 @@ namespace corpc
 		// 被移除的协程列表，要移除某一个事件会先放在该列表中，一次循环结束才会真正delete
 		std::vector<Coroutine *> removedCo_;
 
-		Epoller epoller_;
+		Epoller m_epoller;
 
 		// 用来唤醒epoller
-		Timer timer_;
+		Timer m_timer;
 
-		ObjPool<Coroutine> coPool_;
+		// 对象池
+		ObjPool<Coroutine> m_copool;
 
 		Coroutine *pCurCoroutine_;
 

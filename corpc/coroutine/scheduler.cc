@@ -3,7 +3,7 @@
 	@date: 2022-10-29
 ***/
 #include "scheduler.h"
-
+#include "spinlock_guard.h"
 #include <sys/sysinfo.h>
 
 using namespace corpc;
@@ -33,6 +33,7 @@ bool Scheduler::startScheduler(int threadCnt)
 {
 	for (int i = 0; i < threadCnt; ++i)
 	{
+		LogDebug("init " << i << "processor");
 		processors_.emplace_back(new Processor(i));
 		processors_[i]->loop();
 	}
@@ -53,14 +54,25 @@ Scheduler *Scheduler::getScheduler()
 	return pScher_;
 }
 
-void Scheduler::createNewCo(std::function<void()> &&func, size_t stackSize)
+Coroutine *Scheduler::getNewCoroutine(std::function<void()> &&coFunc, size_t stackSize)
 {
-	proSelector_.next()->goNewCo(std::move(func), stackSize);
-}
+	Coroutine *pCo = nullptr;
 
-void Scheduler::createNewCo(std::function<void()> &func, size_t stackSize)
+	{
+		SpinlockGuard lock(m_coPoolLock);
+		pCo = m_copool.new_obj(stackSize, std::move(coFunc));
+	}
+	return pCo;
+}
+Coroutine *Scheduler::getNewCoroutine(std::function<void()> &coFunc, size_t stackSize)
 {
-	proSelector_.next()->goNewCo(func, stackSize);
+	Coroutine *pCo = nullptr;
+
+	{
+		SpinlockGuard lock(m_coPoolLock);
+		pCo = m_copool.new_obj(stackSize, coFunc);
+	}
+	return pCo;
 }
 
 void Scheduler::join()
@@ -74,6 +86,11 @@ void Scheduler::join()
 Processor *Scheduler::getProcessor(int id)
 {
 	return processors_[id];
+}
+
+Processor *Scheduler::getProcessor()
+{
+	return proSelector_.next();
 }
 
 int Scheduler::getProCnt()

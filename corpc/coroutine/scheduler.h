@@ -6,9 +6,11 @@
 #define CORPC_COROUTINE_SCHEDULER_H
 #include <vector>
 #include <functional>
-
+#include "coroutine.h"
+#include "spinlock.h"
 #include "processor.h"
 #include "processor_selector.h"
+#include "parameter.h"
 
 namespace corpc
 {
@@ -24,11 +26,15 @@ namespace corpc
 
 		static Scheduler *getScheduler();
 
-		// 在idx号线程创建新协程
-		void createNewCo(std::function<void()> &&func, size_t stackSize);
-		void createNewCo(std::function<void()> &func, size_t stackSize);
+		Coroutine *getNewCoroutine(std::function<void()> &&func, size_t stackSize = parameter::coroutineStackSize);
 
-		Processor *getProcessor(int);
+		Coroutine *getNewCoroutine(std::function<void()> &func, size_t stackSize = parameter::coroutineStackSize);
+
+		// 指定实例
+		Processor *getProcessor(int id);
+
+		// 不指定实例，按照策略进行选择
+		Processor *getProcessor();
 
 		int getProCnt();
 
@@ -47,6 +53,12 @@ namespace corpc
 		std::vector<Processor *> processors_;
 
 		ProcessorSelector proSelector_;
+
+	private:
+		Spinlock m_coPoolLock;
+
+		// 对象池
+		ObjPool<Coroutine> m_copool;
 	};
 
 }

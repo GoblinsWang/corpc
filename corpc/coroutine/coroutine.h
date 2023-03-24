@@ -5,6 +5,7 @@
 #ifndef CORPC_COROUTINE_COROUTINE_H
 #define CORPC_COROUTINE_COROUTINE_H
 #include <functional>
+#include <memory>
 #include "context.h"
 #include "utils.h"
 
@@ -24,8 +25,12 @@ namespace corpc
 	class Coroutine
 	{
 	public:
-		Coroutine(Processor *, size_t stackSize, std::function<void()> &&);
-		Coroutine(Processor *, size_t stackSize, std::function<void()> &);
+		using ptr = std::shared_ptr<Coroutine>;
+
+		Coroutine(size_t stackSize, std::function<void()> &&);
+
+		Coroutine(size_t stackSize, std::function<void()> &);
+
 		~Coroutine();
 
 		DISALLOW_COPY_MOVE_AND_ASSIGN(Coroutine);
@@ -47,11 +52,11 @@ namespace corpc
 	private:
 		std::function<void()> coFunc_;
 
-		Processor *pMyProcessor_;
-
 		int status_;
 
 		Context ctx_;
+
+		Processor *pMyProcessor_;
 	};
 
 }
