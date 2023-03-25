@@ -36,7 +36,7 @@ Processor *ProcessorSelector::next()
 		++curPro_;
 		if (curPro_ >= n)
 		{
-			curPro_ = 0;
+			curPro_ = 1;
 		}
 		break;
 	}

@@ -14,25 +14,27 @@
 namespace corpc
 {
 
-	Epoller::Epoller()
-		: epollFd_(-1), activeEpollEvents_(parameter::epollerListFirstSize)
+	Epoller::Epoller(corpc::Processor *processor)
+		: m_epollFd(-1), m_activeEpollEvents(parameter::epollerListFirstSize)
 	{
+		m_epollFd = ::epoll_create1(EPOLL_CLOEXEC);
+		m_processor = processor;
+		if ((m_wake_fd = eventfd(0, EFD_NONBLOCK)) <= 0)
+		{
+			LogError("start server error. event_fd error");
+			_exit(0);
+		}
+		LogDebug("wakefd = " << m_wake_fd);
+		addWakeupFd();
 	}
 
 	Epoller::~Epoller()
 	{
 		if (isEpollFdUseful())
 		{
-			::close(epollFd_);
+			::close(m_epollFd);
 		}
 	};
-
-	bool Epoller::init(corpc::Processor *processor)
-	{
-		epollFd_ = ::epoll_create1(EPOLL_CLOEXEC);
-		m_processor = processor;
-		return isEpollFdUseful();
-	}
 
 	void Epoller::setTimerfd(int timer_fd)
 	{
@@ -40,17 +42,19 @@ namespace corpc
 	}
 
 	// 修改Epoller中的事件
-	bool Epoller::modEvent(Coroutine *pCo, int fd, int interesEv)
+	bool Epoller::modEvent(Coroutine *pCo, int fd, int op)
 	{
 		if (!isEpollFdUseful())
 		{
 			return false;
 		}
+		LogDebug("modEvent, fd = " << fd);
 		struct epoll_event event;
 		memset(&event, 0, sizeof(event));
-		event.events = interesEv;
+		event.data.fd = fd;
+		event.events = op;
 		event.data.ptr = pCo;
-		if (::epoll_ctl(epollFd_, EPOLL_CTL_MOD, fd, &event) < 0)
+		if (::epoll_ctl(m_epollFd, EPOLL_CTL_MOD, fd, &event) < 0)
 		{
 			return false;
 		}
@@ -58,17 +62,19 @@ namespace corpc
 	}
 
 	// 向Epoller中添加事件
-	bool Epoller::addEvent(Coroutine *pCo, int fd, int interesEv)
+	bool Epoller::addEvent(Coroutine *pCo, int fd, int op)
 	{
 		if (!isEpollFdUseful())
 		{
 			return false;
 		}
+		LogDebug("addEvent, fd = " << fd);
 		struct epoll_event event;
 		memset(&event, 0, sizeof(event));
-		event.events = interesEv;
-		event.data.ptr = pCo;
-		if (::epoll_ctl(epollFd_, EPOLL_CTL_ADD, fd, &event) < 0)
+		event.data.fd = fd;
+		event.events = op;
+		// event.data.ptr = pCo;
+		if (::epoll_ctl(m_epollFd, EPOLL_CTL_ADD, fd, &event) < 0)
 		{
 			return false;
 		}
@@ -76,28 +82,45 @@ namespace corpc
 	}
 
 	// 从Epoller中移除事件
-	bool Epoller::delEvent(Coroutine *pCo, int fd, int interesEv)
+	bool Epoller::delEvent(Coroutine *pCo, int fd, int op)
 	{
 		if (!isEpollFdUseful())
 		{
 			return false;
 		}
-		struct epoll_event event;
-		memset(&event, 0, sizeof(event));
-		event.events = interesEv;
-		event.data.ptr = pCo;
-		if (::epoll_ctl(epollFd_, EPOLL_CTL_DEL, fd, &event) < 0)
+
+		if (::epoll_ctl(m_epollFd, EPOLL_CTL_DEL, fd, nullptr) < 0)
 		{
 			return false;
 		}
 		return true;
 	}
 
+	void Epoller::addWakeupFd()
+	{
+		if (!addEvent(nullptr, m_wake_fd, EPOLLIN))
+		{
+			LogError("epoo_ctl error, fd[" << m_wake_fd << "], errno=" << errno);
+		}
+		m_fds.push_back(m_wake_fd);
+	}
+
+	void Epoller::wakeup()
+	{
+		LogDebug("wakeup fd = " << m_wake_fd);
+		uint64_t tmp = 1;
+		uint64_t *p = &tmp;
+		if (::write(m_wake_fd, p, 8) != 8)
+		{
+			LogError("write wakeupfd[" << m_wake_fd << "] error");
+		}
+	}
+
 	void Epoller::getActiveTasks(int timeOutMs, std::vector<Coroutine *> &activeCors)
 	{
 
-		int actEvNum = ::epoll_wait(epollFd_, &*activeEpollEvents_.begin(), static_cast<int>(activeEpollEvents_.size()), -1);
-		// LogDebug("epoll_wait back");
+		int actEvNum = ::epoll_wait(m_epollFd, &*m_activeEpollEvents.begin(), static_cast<int>(m_activeEpollEvents.size()), timeOutMs);
+		// LogDebug("epoll_wait back, actEvNum = " << actEvNum);
 
 		if (actEvNum < 0)
 		{
@@ -107,48 +130,54 @@ namespace corpc
 		{
 			for (int i = 0; i < actEvNum; ++i)
 			{
-				epoll_event one_event = activeEpollEvents_[i];
-
-				corpc::FdEvent *ptr = (corpc::FdEvent *)one_event.data.ptr;
-				if (ptr != nullptr)
+				epoll_event one_event = m_activeEpollEvents[i];
+				// LogDebug("fd = " << one_event.data.fd);
+				if (one_event.data.fd == m_wake_fd && (one_event.events & READ))
 				{
-					int fd = ptr->getFd();
-
-					if ((!(one_event.events & EPOLLIN)) && (!(one_event.events & EPOLLOUT)))
+					// wakeup
+					LogDebug("epoll wakeup, fd=[" << m_wake_fd << "]");
+					char buf[8];
+					while (1)
 					{
-						LogError("socket [" << fd << "] occur other unknow event:[" << one_event.events << "], need unregister this socket");
-						m_processor->delEventInLoopThread(fd);
+						if ((::read(m_wake_fd, buf, 8) == -1) && errno == EAGAIN)
+						{
+							break;
+						}
 					}
-					else
+				}
+				else
+				{
+					corpc::FdEvent *ptr = (corpc::FdEvent *)one_event.data.ptr;
+
+					if (ptr != nullptr)
 					{
-						// std::function<void()> read_cb;
-						// std::function<void()> write_cb;
-						// read_cb = ptr->getCallBack(READ);
-						// write_cb = ptr->getCallBack(WRITE);
-						// if timer event, direct excute
-						if (fd == m_timer_fd)
+						int fd = ptr->getFd();
+
+						if ((!(one_event.events & EPOLLIN)) && (!(one_event.events & EPOLLOUT)))
 						{
-							uint64_t howmany;
-							ssize_t n = ::read(fd, &howmany, sizeof howmany);
-							continue;
+							LogError("socket [" << fd << "] occur other unknow event:[" << one_event.events << "], need unregister this socket");
+							m_processor->delEventInLoopThread(fd);
 						}
-						if (one_event.events & EPOLLIN)
+						else
 						{
-							LogDebug("socket [" << fd << "] occur read event");
-							activeCors.push_back(ptr->getCoroutine());
-						}
-						if (one_event.events & EPOLLOUT)
-						{
-							LogDebug("socket [" << fd << "] occur write event");
-							activeCors.push_back(ptr->getCoroutine());
+							if (one_event.events & EPOLLIN)
+							{
+								// LogDebug("socket [" << fd << "] occur read event");
+								activeCors.push_back(ptr->getCoroutine());
+							}
+							if (one_event.events & EPOLLOUT)
+							{
+								// LogDebug("socket [" << fd << "] occur write event");
+								activeCors.push_back(ptr->getCoroutine());
+							}
 						}
 					}
 				}
 			}
-			if (actEvNum == static_cast<int>(activeEpollEvents_.size()))
+			if (actEvNum == static_cast<int>(m_activeEpollEvents.size()))
 			{
 				// 若从epoll中获取事件的数组满了，说明这个数组的大小可能不够，扩展一倍
-				activeEpollEvents_.resize(activeEpollEvents_.size() * 2);
+				m_activeEpollEvents.resize(m_activeEpollEvents.size() * 2);
 			}
 		}
 	}

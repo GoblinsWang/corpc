@@ -42,6 +42,16 @@ namespace corpc
 			delete co;
 		}
 	}
+	// wait event on fd
+	void Processor::waitEvent(int fd, int event)
+	{
+		LogDebug("in waitEvent, fd = " << fd);
+		m_epoller->addEvent(pCurCoroutine_, fd, event);
+
+		yield();
+
+		m_epoller->delEvent(pCurCoroutine_, fd, event);
+	}
 
 	// call by other threads, need lock
 	void Processor::addEvent(int fd, epoll_event event, bool is_wakeup /*=true*/)
@@ -62,7 +72,7 @@ namespace corpc
 		}
 		if (is_wakeup)
 		{
-			wakeUpEpoller();
+			m_epoller->wakeup();
 		}
 	}
 
@@ -88,7 +98,7 @@ namespace corpc
 		}
 		if (is_wakeup)
 		{
-			wakeUpEpoller();
+			m_epoller->wakeup();
 		}
 	}
 
@@ -101,8 +111,7 @@ namespace corpc
 		}
 		if (is_wakeup)
 		{
-			LogDebug("to wakeUpEpoller()");
-			wakeUpEpoller();
+			m_epoller->wakeup();
 		}
 	}
 
@@ -120,20 +129,22 @@ namespace corpc
 		}
 		if (is_wakeup)
 		{
-			wakeUpEpoller();
+			m_epoller->wakeup();
 		}
 	}
 
 	void Processor::addCoroutine(corpc::Coroutine *pCo, bool is_wakeup /*=true*/)
 	{
-		LogDebug("in processor " << m_tid);
 		pCo->setProcessor(this);
 		{
 			SpinlockGuard lock(newQueLock_);
 			newCoroutines_[!runningNewQue_].push(pCo);
 		}
 		if (is_wakeup)
-			wakeUpEpoller();
+		{
+			LogDebug("in processor " << m_tid << ", to wakeup epoller");
+			m_epoller->wakeup();
+		}
 	}
 
 	bool Processor::isLoopThread() const
@@ -226,7 +237,7 @@ namespace corpc
 	void Processor::wait(Time time)
 	{
 		pCurCoroutine_->yield();
-		m_timer.runAfter(time, pCurCoroutine_);
+		m_timer->runAfter(time, pCurCoroutine_);
 		/*
 			切换到主线程，然后将当前协程的上下文保存到当前协程的对象里面
 		*/
@@ -239,7 +250,7 @@ namespace corpc
 			SpinlockGuard lock(newQueLock_);
 			newCoroutines_[!runningNewQue_].push(pCo);
 		}
-		wakeUpEpoller();
+		m_epoller->wakeup();
 	}
 
 	void Processor::goCoBatch(std::vector<Coroutine *> &cos)
@@ -251,7 +262,7 @@ namespace corpc
 				newCoroutines_[!runningNewQue_].push(pCo);
 			}
 		}
-		wakeUpEpoller();
+		m_epoller->wakeup();
 	}
 
 	Processor *Processor::GetProcessor()
@@ -261,20 +272,18 @@ namespace corpc
 
 	bool Processor::loop()
 	{
-		// 初始化Epoller
-		if (!m_epoller.init(this))
+		m_epoller = std::make_shared<Epoller>(this);
+		if (!m_epoller->isEpollFdUseful())
 		{
+			LogError("init " << m_tid << " m_epoller failed");
 			return false;
 		}
-		LogDebug("init " << m_tid << " m_epoller");
-
-		// 初始化Timer
-		if (!m_timer.init(&m_epoller))
+		m_timer = std::make_shared<Timer>();
+		if (!m_timer->isTimeFdUseful())
 		{
 			LogError("init " << m_tid << " m_timer failed");
 			return false;
 		}
-		LogDebug("init " << m_tid << " m_timer");
 		// 初始化loop
 		pLoop_ = new std::thread(
 			[this]
@@ -293,10 +302,10 @@ namespace corpc
 						timerExpiredCo_.clear();
 					}
 					// 获取活跃事件
-					m_epoller.getActiveTasks(parameter::epollTimeOutMs, m_actCoroutines);
+					m_epoller->getActiveTasks(parameter::epollTimeOutMs, m_actCoroutines);
 
 					// 处理超时协程
-					m_timer.getExpiredCoroutines(timerExpiredCo_);
+					m_timer->getExpiredCoroutines(timerExpiredCo_);
 					size_t timerCoCnt = timerExpiredCo_.size();
 					// LogDebug("超时的协程数量 : " << timerCoCnt);
 					for (size_t i = 0; i < timerCoCnt; ++i)
@@ -355,11 +364,6 @@ namespace corpc
 	void Processor::join()
 	{
 		pLoop_->join();
-	}
-
-	void Processor::wakeUpEpoller()
-	{
-		m_timer.wakeUp();
 	}
 
 	void Processor::killCurCo()

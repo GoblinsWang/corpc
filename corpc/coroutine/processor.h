@@ -47,6 +47,8 @@ namespace corpc
 
 		DISALLOW_COPY_MOVE_AND_ASSIGN(Processor);
 
+		void waitEvent(int fd, int event);
+
 		void addEvent(int fd, epoll_event event, bool is_wakeup = true);
 
 		void delEvent(int fd, bool is_wakeup = true);
@@ -92,19 +94,22 @@ namespace corpc
 		// 恢复运行指定协程
 		void resume(Coroutine *);
 
-		inline void wakeUpEpoller();
-
 	private:
 		bool isLoopThread() const;
 
 	private:
 		// 该处理器的线程号
 		int m_tid;
+
 		int m_status;
+
+		Epoller::ptr m_epoller;
+
+		Timer::ptr m_timer;
+
 		std::mutex m_mutex;
 		std::thread *pLoop_;
 
-		std::vector<int> m_fds; // alrady care events
 		std::map<int, epoll_event> m_pending_add_fds;
 		std::vector<int> m_pending_del_fds;
 		std::vector<std::function<void()>> m_pending_tasks;
@@ -131,11 +136,6 @@ namespace corpc
 
 		// 被移除的协程列表，要移除某一个事件会先放在该列表中，一次循环结束才会真正delete
 		std::vector<Coroutine *> removedCo_;
-
-		Epoller m_epoller;
-
-		// 用来唤醒epoller
-		Timer m_timer;
 
 		// 对象池
 		ObjPool<Coroutine> m_copool;

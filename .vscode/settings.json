@@ -88,6 +88,23 @@
     "stop_token": "cpp",
     "streambuf": "cpp",
     "thread": "cpp",
-    "typeinfo": "cpp"
-  }
+    "typeinfo": "cpp",
+    "coroutine": "cpp",
+    "cstring": "cpp",
+    "unordered_set": "cpp",
+    "fstream": "cpp",
+    "iomanip": "cpp",
+    "sstream": "cpp",
+    "forward_list": "cpp",
+    "list": "cpp",
+    "buffer": "cpp",
+    "executor": "cpp",
+    "internet": "cpp",
+    "io_context": "cpp",
+    "netfwd": "cpp",
+    "socket": "cpp",
+    "timer": "cpp",
+    "future": "cpp"
+  },
+  "cmake.sourceDirectory": "${workspaceFolder}/example"
 }

@@ -4,11 +4,12 @@
 ***/
 #ifndef CORPC_COROUTINE_EPOLLER_H
 #define CORPC_COROUTINE_EPOLLER_H
-#include "utils.h"
-#include "../log/logger.h"
 #include <vector>
 #include <functional>
-
+#include <memory>
+#include <sys/eventfd.h>
+#include "utils.h"
+#include "../log/logger.h"
 struct epoll_event;
 
 namespace corpc
@@ -20,13 +21,13 @@ namespace corpc
 	class Epoller
 	{
 	public:
-		Epoller();
+		using ptr = std::shared_ptr<Epoller>;
+
+		Epoller(corpc::Processor *processor);
+
 		~Epoller();
 
 		DISALLOW_COPY_MOVE_AND_ASSIGN(Epoller);
-
-		// 要使用EventEpoller必须调用该函数初始化，失败则返回false
-		bool init(corpc::Processor *processor);
 
 		void setTimerfd(int timer_fd);
 
@@ -39,22 +40,29 @@ namespace corpc
 		// 从Epoller中移除事件
 		bool delEvent(Coroutine *pCo, int fd, int interesEv);
 
+		void addWakeupFd();
+
+		void wakeup();
+
 		// 获取被激活的事件服务
 		void getActiveTasks(int timeOutMs, std::vector<Coroutine *> &activeCors);
 
-	private:
-		inline bool isEpollFdUseful() { return epollFd_ < 0 ? false : true; };
+		inline bool isEpollFdUseful() { return m_epollFd < 0 ? false : true; };
 
 	private:
 		int m_timer_fd;
 
-		int epollFd_;
+		int m_wake_fd{-1}; // wakeup fd
+
+		int m_epollFd;
+
+		std::vector<int> m_fds; // alrady care events
 
 		std::mutex m_mutex;
 
 		corpc::Processor *m_processor = nullptr;
 
-		std::vector<struct epoll_event> activeEpollEvents_;
+		std::vector<struct epoll_event> m_activeEpollEvents;
 	};
 
 }

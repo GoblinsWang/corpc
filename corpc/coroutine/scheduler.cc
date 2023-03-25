@@ -33,7 +33,7 @@ bool Scheduler::startScheduler(int threadCnt)
 {
 	for (int i = 0; i < threadCnt; ++i)
 	{
-		LogDebug("init " << i << "processor");
+		LogDebug("init " << i << " processor");
 		processors_.emplace_back(new Processor(i));
 		processors_[i]->loop();
 	}

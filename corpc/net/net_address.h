@@ -1,5 +1,5 @@
-#ifndef CORPC_NET_ADDRESS_H
-#define CORPC_NET_ADDRESS_H
+#ifndef CORPC_NET_NET_ADDRESS_H
+#define CORPC_NET_NET_ADDRESS_H
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -32,7 +32,7 @@ namespace corpc
     {
 
     public:
-        IPAddress(const std::string &ip, uint16_t port);
+        IPAddress(const std::string &ip = "", uint16_t port = -1);
 
         IPAddress(const std::string &addr);
 

@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <sstream>
-#include "address.h"
+#include "net_address.h"
 #include "../log/logger.h"
 
 namespace corpc
@@ -46,12 +46,9 @@ namespace corpc
 
     IPAddress::IPAddress(sockaddr_in addr) : m_addr(addr)
     {
-        // if (m_addr.sin_family != AF_INET) {
-        // ErrorLog << "err family, this address is valid";
-        // }
-        LogDebug("ip[" << m_ip << "], port[" << addr.sin_port);
         m_ip = std::string(inet_ntoa(m_addr.sin_addr));
         m_port = ntohs(m_addr.sin_port);
+        LogDebug("ip[" << m_ip << "], port[" << m_port << "]");
     }
 
     IPAddress::IPAddress(const std::string &addr)
