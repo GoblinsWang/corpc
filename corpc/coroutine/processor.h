@@ -15,7 +15,7 @@
 #include "spinlock.h"
 #include "context.h"
 #include "coroutine.h"
-#include "../net/epoller.h"
+#include "epoller.h"
 #include "timer.h"
 #include "../log/logger.h"
 
@@ -100,7 +100,7 @@ namespace corpc
 	private:
 		// 该处理器的线程号
 		int m_tid;
-		int status_;
+		int m_status;
 		std::mutex m_mutex;
 		std::thread *pLoop_;
 
@@ -122,7 +122,7 @@ namespace corpc
 		// std::mutex newCoQueMtx_;
 
 		// EventEpoller发现的活跃事件所放的列表
-		std::vector<Coroutine *> actCoroutines_;
+		std::vector<Coroutine *> m_actCoroutines;
 
 		std::set<Coroutine *> coSet_;
 

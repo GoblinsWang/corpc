@@ -60,7 +60,7 @@ Coroutine *Scheduler::getNewCoroutine(std::function<void()> &&coFunc, size_t sta
 
 	{
 		SpinlockGuard lock(m_coPoolLock);
-		pCo = m_copool.new_obj(stackSize, std::move(coFunc));
+		pCo = m_copool.new_obj(std::move(coFunc), stackSize);
 	}
 	return pCo;
 }
@@ -70,7 +70,7 @@ Coroutine *Scheduler::getNewCoroutine(std::function<void()> &coFunc, size_t stac
 
 	{
 		SpinlockGuard lock(m_coPoolLock);
-		pCo = m_copool.new_obj(stackSize, coFunc);
+		pCo = m_copool.new_obj(coFunc, stackSize);
 	}
 	return pCo;
 }

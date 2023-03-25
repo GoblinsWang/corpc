@@ -3,6 +3,7 @@
 	@date: 2022-10-29
 ***/
 #include <iostream>
+#include <thread>
 #include <sys/sysinfo.h>
 #include "../corpc/coroutine/scheduler.h"
 #include "../corpc/coroutine/processor.h"
@@ -13,11 +14,14 @@
 void testCoroutine()
 {
 	corpc::Scheduler *Sc = corpc::Scheduler::getScheduler();
-	auto func = []()
-	{ std::cout << "hello world" << endl; };
+	for (int i = 0; i < 50; ++i)
+	{
+		auto func = []()
+		{ std::cout << "hello world" << endl; };
 
-	corpc::Coroutine *cor = Sc->getNewCoroutine(func);
-	Sc->getProcessor()->addCoroutine(cor);
+		corpc::Coroutine *cor = Sc->getNewCoroutine(func);
+		Sc->getProcessor()->addCoroutine(cor);
+	}
 }
 
 int main()

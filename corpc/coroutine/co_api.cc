@@ -7,35 +7,35 @@
 
 void corpc::co_go(std::function<void()> &&func, size_t stackSize, int tid)
 {
-	// if (tid < 0)
-	// {
-	// 	// LogTrace("随机选择processor");
-	// 	corpc::Scheduler::getScheduler()->createNewCo(std::move(func), stackSize);
-	// }
-	// else
-	// {
-	// 	// LogTrace("指定processor为" << tid);
-	// 	tid %= corpc::Scheduler::getScheduler()->getProCnt();
-	// 	corpc::Scheduler::getScheduler()->getProcessor(tid)->goNewCo(std::move(func), stackSize);
-	// }
+	corpc::Scheduler *Sc = corpc::Scheduler::getScheduler();
+	corpc::Coroutine *cor = Sc->getNewCoroutine(std::move(func), stackSize);
+	if (tid < 0)
+	{
+		Sc->getProcessor()->addCoroutine(cor);
+	}
+	else
+	{
+		Sc->getProcessor(tid)->addCoroutine(cor);
+	}
 }
 
 void corpc::co_go(std::function<void()> &func, size_t stackSize, int tid)
 {
-	// if (tid < 0)
-	// {
-	// 	corpc::Scheduler::getScheduler()->createNewCo(func, stackSize);
-	// }
-	// else
-	// {
-	// 	tid %= corpc::Scheduler::getScheduler()->getProCnt();
-	// 	corpc::Scheduler::getScheduler()->getProcessor(tid)->goNewCo(func, stackSize);
-	// }
+	corpc::Scheduler *Sc = corpc::Scheduler::getScheduler();
+	corpc::Coroutine *cor = Sc->getNewCoroutine(func, stackSize);
+	if (tid < 0)
+	{
+		Sc->getProcessor()->addCoroutine(cor);
+	}
+	else
+	{
+		Sc->getProcessor(tid)->addCoroutine(cor);
+	}
 }
 
 void corpc::co_sleep(Time time)
 {
-	// corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->wait(time);
+	corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->wait(time);
 }
 
 void corpc::sche_join()

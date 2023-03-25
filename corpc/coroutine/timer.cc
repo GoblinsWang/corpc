@@ -4,7 +4,7 @@
 ***/
 #include "timer.h"
 #include "coroutine.h"
-#include "../net/epoller.h"
+#include "epoller.h"
 
 #include <sys/epoll.h>
 #include <sys/timerfd.h>
@@ -29,14 +29,11 @@ Timer::~Timer()
 bool Timer::init(Epoller *pEpoller)
 {
 	timeFd_ = ::timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
-	int op = EPOLLIN | EPOLLPRI | EPOLLRDHUP;
-	struct epoll_event event;
-	memset(&event, 0, sizeof(event));
-	event.events = op;
-	event.data.ptr = nullptr;
 	if (isTimeFdUseful())
 	{
-		return pEpoller->addEv(op, timeFd_, event);
+		// LogDebug("addEv timeFd_");
+		return pEpoller->addEvent(nullptr, timeFd_, EPOLLIN | EPOLLPRI | EPOLLRDHUP);
+		// return true;
 	}
 	return false;
 }

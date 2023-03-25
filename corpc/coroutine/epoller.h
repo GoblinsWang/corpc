@@ -4,7 +4,7 @@
 ***/
 #ifndef CORPC_COROUTINE_EPOLLER_H
 #define CORPC_COROUTINE_EPOLLER_H
-#include "../coroutine/utils.h"
+#include "utils.h"
 #include "../log/logger.h"
 #include <vector>
 #include <functional>
@@ -30,14 +30,17 @@ namespace corpc
 
 		void setTimerfd(int timer_fd);
 
+		// 修改Epoller中的事件
+		bool modEvent(Coroutine *pCo, int fd, int interesEv);
+
 		// 向Epoller中添加事件
-		bool addEv(int op, int fd, epoll_event event);
+		bool addEvent(Coroutine *pCo, int fd, int interesEv);
 
 		// 从Epoller中移除事件
-		bool removeEv(int op, int fd);
+		bool delEvent(Coroutine *pCo, int fd, int interesEv);
 
 		// 获取被激活的事件服务
-		void getPendingTasks(int timeOutMs, std::vector<std::function<void()>> &pending_tasks);
+		void getActiveTasks(int timeOutMs, std::vector<Coroutine *> &activeCors);
 
 	private:
 		inline bool isEpollFdUseful() { return epollFd_ < 0 ? false : true; };

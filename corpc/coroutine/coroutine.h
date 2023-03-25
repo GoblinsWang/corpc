@@ -8,6 +8,7 @@
 #include <memory>
 #include "context.h"
 #include "utils.h"
+#include "../log/logger.h"
 
 namespace corpc
 {
@@ -27,9 +28,9 @@ namespace corpc
 	public:
 		using ptr = std::shared_ptr<Coroutine>;
 
-		Coroutine(size_t stackSize, std::function<void()> &&);
+		Coroutine(std::function<void()> &&, size_t stackSize);
 
-		Coroutine(size_t stackSize, std::function<void()> &);
+		Coroutine(std::function<void()> &, size_t stackSize);
 
 		~Coroutine();
 
@@ -41,22 +42,24 @@ namespace corpc
 		// 暂停运行当前协程
 		void yield();
 
-		Processor *getMyProcessor() { return pMyProcessor_; }
+		void setProcessor(Processor *);
+
+		Processor *getMyProcessor() { return m_processor; }
 
 		// 运行该协程的函数
-		inline void startFunc() { coFunc_(); };
+		inline void startFunc() { m_coFunc(); };
 
 		// 获取该协程的上下文
-		inline Context *getCtx() { return &ctx_; }
+		inline Context *getCtx() { return &m_ctx; }
 
 	private:
-		std::function<void()> coFunc_;
+		std::function<void()> m_coFunc;
 
-		int status_;
+		int m_status;
 
-		Context ctx_;
+		Context m_ctx;
 
-		Processor *pMyProcessor_;
+		Processor *m_processor;
 	};
 
 }

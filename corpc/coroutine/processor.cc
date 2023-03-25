@@ -6,7 +6,7 @@
 #include "processor.h"
 #include "parameter.h"
 #include "spinlock_guard.h"
-
+#include "../log/logger.h"
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <algorithm>
@@ -18,18 +18,18 @@ namespace corpc
 	__thread int threadIdx = -1;
 
 	Processor::Processor(int tid)
-		: m_tid(tid), status_(PRO_STOPPED), pLoop_(nullptr), runningNewQue_(0), pCurCoroutine_(nullptr), mainCtx_(0)
+		: m_tid(tid), m_status(PRO_STOPPED), pLoop_(nullptr), runningNewQue_(0), pCurCoroutine_(nullptr), mainCtx_(0)
 	{
 		mainCtx_.makeCurContext();
 	}
 
 	Processor::~Processor()
 	{
-		if (PRO_RUNNING == status_)
+		if (PRO_RUNNING == m_status)
 		{
 			stop();
 		}
-		if (PRO_STOPPING == status_)
+		if (PRO_STOPPING == m_status)
 		{
 			join();
 		}
@@ -124,14 +124,16 @@ namespace corpc
 		}
 	}
 
-	void Processor::addCoroutine(corpc::Coroutine *cor, bool is_wakeup /*=true*/)
+	void Processor::addCoroutine(corpc::Coroutine *pCo, bool is_wakeup /*=true*/)
 	{
-		LogDebug("in addCoroutine()");
-		auto func = [this, cor]()
+		LogDebug("in processor " << m_tid);
+		pCo->setProcessor(this);
 		{
-			resume(cor);
-		};
-		addTask(func, is_wakeup);
+			SpinlockGuard lock(newQueLock_);
+			newCoroutines_[!runningNewQue_].push(pCo);
+		}
+		if (is_wakeup)
+			wakeUpEpoller();
 	}
 
 	bool Processor::isLoopThread() const
@@ -151,25 +153,25 @@ namespace corpc
 
 		assert(isLoopThread());
 
-		int op = EPOLL_CTL_ADD;
-		bool is_add = true;
-		// int tmp_fd = event;
-		auto it = find(m_fds.begin(), m_fds.end(), fd);
-		if (it != m_fds.end())
-		{
-			is_add = false;
-			op = EPOLL_CTL_MOD;
-		}
+		// int op = EPOLL_CTL_ADD;
+		// bool is_add = true;
+		// // int tmp_fd = event;
+		// auto it = find(m_fds.begin(), m_fds.end(), fd);
+		// if (it != m_fds.end())
+		// {
+		// 	is_add = false;
+		// 	op = EPOLL_CTL_MOD;
+		// }
 
-		if (!m_epoller.addEv(op, fd, event))
-		{
-			LogDebug("epoo_ctl error, fd[" << fd << "]");
-			return;
-		}
-		if (is_add)
-		{
-			m_fds.push_back(fd);
-		}
+		// if (!m_epoller.addEv(op, fd, event))
+		// {
+		// 	LogDebug("epoo_ctl error, fd[" << fd << "]");
+		// 	return;
+		// }
+		// if (is_add)
+		// {
+		// 	m_fds.push_back(fd);
+		// }
 		LogDebug("epoll_ctl add succ, fd[" << fd << "]");
 	}
 
@@ -179,20 +181,20 @@ namespace corpc
 
 		assert(isLoopThread());
 
-		auto it = find(m_fds.begin(), m_fds.end(), fd);
-		if (it == m_fds.end())
-		{
-			LogDebug("fd[" << fd << "] not in this loop");
-			return;
-		}
-		int op = EPOLL_CTL_DEL;
+		// auto it = find(m_fds.begin(), m_fds.end(), fd);
+		// if (it == m_fds.end())
+		// {
+		// 	LogDebug("fd[" << fd << "] not in this loop");
+		// 	return;
+		// }
+		// int op = EPOLL_CTL_DEL;
 
-		if (!m_epoller.removeEv(op, fd))
-		{
-			LogDebug("epoo_ctl error, fd[" << fd << "]");
-		}
+		// if (!m_epoller.removeEv(op, fd))
+		// {
+		// 	LogDebug("epoo_ctl error, fd[" << fd << "]");
+		// }
 
-		m_fds.erase(it);
+		// m_fds.erase(it);
 		LogDebug("del succ, fd[" << fd << "]");
 	}
 
@@ -264,36 +266,39 @@ namespace corpc
 		{
 			return false;
 		}
+		LogDebug("init " << m_tid << " m_epoller");
 
 		// 初始化Timer
 		if (!m_timer.init(&m_epoller))
 		{
+			LogError("init " << m_tid << " m_timer failed");
 			return false;
 		}
-
+		LogDebug("init " << m_tid << " m_timer");
 		// 初始化loop
 		pLoop_ = new std::thread(
 			[this]
 			{
 				threadIdx = m_tid;
-				status_ = PRO_RUNNING;
-				while (PRO_RUNNING == status_)
+				m_status = PRO_RUNNING;
+				while (PRO_RUNNING == m_status)
 				{
 					// 清空所有列表
-					if (m_pending_tasks.size())
+					if (m_actCoroutines.size())
 					{
-						m_pending_tasks.clear();
+						m_actCoroutines.clear();
 					}
 					if (timerExpiredCo_.size())
 					{
 						timerExpiredCo_.clear();
 					}
 					// 获取活跃事件
-					m_epoller.getPendingTasks(parameter::epollTimeOutMs, m_pending_tasks);
+					m_epoller.getActiveTasks(parameter::epollTimeOutMs, m_actCoroutines);
 
 					// 处理超时协程
 					m_timer.getExpiredCoroutines(timerExpiredCo_);
 					size_t timerCoCnt = timerExpiredCo_.size();
+					// LogDebug("超时的协程数量 : " << timerCoCnt);
 					for (size_t i = 0; i < timerCoCnt; ++i)
 					{
 						resume(timerExpiredCo_[i]);
@@ -302,7 +307,7 @@ namespace corpc
 					// 执行新来的协程
 					Coroutine *pNewCo = nullptr;
 					int runningQue = runningNewQue_;
-
+					// LogDebug("newCoroutines size = " << newCoroutines_[runningQue].size());
 					while (!newCoroutines_[runningQue].empty())
 					{
 						{
@@ -319,10 +324,10 @@ namespace corpc
 					}
 
 					// 执行被唤醒的协程
-					size_t actCoCnt = actCoroutines_.size();
+					size_t actCoCnt = m_actCoroutines.size();
 					for (size_t i = 0; i < actCoCnt; ++i)
 					{
-						resume(actCoroutines_[i]);
+						resume(m_actCoroutines[i]);
 					}
 
 					// 清除已经执行完毕的协程
@@ -337,14 +342,14 @@ namespace corpc
 					}
 					removedCo_.clear();
 				}
-				status_ = PRO_STOPPED;
+				m_status = PRO_STOPPED;
 			});
 		return true;
 	}
 
 	void Processor::stop()
 	{
-		status_ = PRO_STOPPING;
+		m_status = PRO_STOPPING;
 	}
 
 	void Processor::join()
