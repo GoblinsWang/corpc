@@ -38,10 +38,10 @@ namespace corpc
 		}
 	};
 
-	// void Epoller::setTimerfd(int timer_fd)
-	// {
-	// 	m_timer_fd = timer_fd;
-	// }
+	void Epoller::setTimerfd(int timer_fd)
+	{
+		m_timer_fd = timer_fd;
+	}
 
 	// 修改Epoller中的事件
 	bool Epoller::modEvent(FdEvent *fd_event, int fd, int op)
@@ -145,6 +145,19 @@ namespace corpc
 					{
 						// LogDebug(" is m_wake_fd, fd=[" << m_wake_fd << "]");
 						if ((::read(m_wake_fd, buf, 8) == -1) && errno == EAGAIN)
+						{
+							break;
+						}
+					}
+				}
+				else if (fd == m_timer_fd && (one_event.events & READ))
+				{
+					LogDebug(" is m_timer_fd, fd=[" << m_wake_fd << "]");
+					char buf[8];
+					while (1)
+					{
+						// LogDebug(" is m_timer_fd, fd=[" << m_wake_fd << "]");
+						if ((::read(m_timer_fd, buf, 8) == -1) && errno == EAGAIN)
 						{
 							break;
 						}

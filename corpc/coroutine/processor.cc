@@ -6,7 +6,6 @@
 #include "processor.h"
 #include "parameter.h"
 #include "spinlock_guard.h"
-#include "../log/logger.h"
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <algorithm>
@@ -177,12 +176,14 @@ namespace corpc
 			LogError("init " << m_tid << " m_epoller failed");
 			return false;
 		}
-		m_timer = std::make_shared<Timer>();
+		m_timer = std::make_shared<Timer>(m_epoller.get());
 		if (!m_timer->isTimeFdUseful())
 		{
 			LogError("init " << m_tid << " m_timer failed");
 			return false;
 		}
+		m_epoller->setTimerfd(m_timer->getTimeFd());
+
 		// 初始化loop
 		m_pLoop = new std::thread(
 			[this]
@@ -206,8 +207,8 @@ namespace corpc
 					// get timeout coroutine
 					m_timer->getExpiredCoroutines(m_timerExpiredCo);
 					size_t timerCoCnt = m_timerExpiredCo.size();
-					// if (timerCoCnt)
-					// 	LogDebug("the num of timeout coroutine : " << timerCoCnt);
+					if (timerCoCnt)
+						LogDebug("the num of timeout coroutine : " << timerCoCnt);
 					for (size_t i = 0; i < timerCoCnt; ++i)
 					{
 						resume(m_timerExpiredCo[i]);

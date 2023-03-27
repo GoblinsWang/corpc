@@ -17,7 +17,7 @@ namespace corpc
 		static constexpr int epollerListFirstSize = 16;
 
 		// epoll_wait的阻塞时长
-		static constexpr int epollTimeOutMs = 5000;
+		static constexpr int epollTimeOutMs = 10000;
 
 		// 监听队列的长度
 		constexpr static unsigned backLog = 4096;

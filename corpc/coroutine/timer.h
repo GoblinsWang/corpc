@@ -21,6 +21,8 @@ namespace corpc
 {
 	class Coroutine;
 
+	class Epoller;
+
 	// 定时器
 	class Timer
 	{
@@ -29,11 +31,13 @@ namespace corpc
 
 		using TimerHeap = std::priority_queue<std::pair<Time, Coroutine *>, std::vector<std::pair<Time, Coroutine *>>, std::greater<std::pair<Time, Coroutine *>>>;
 
-		Timer();
+		Timer(Epoller *);
 
 		~Timer();
 
 		DISALLOW_COPY_MOVE_AND_ASSIGN(Timer);
+
+		int getTimeFd();
 
 		// 获取所有已经超时的需要执行的函数
 		void getExpiredCoroutines(std::vector<Coroutine *> &expiredCoroutines);

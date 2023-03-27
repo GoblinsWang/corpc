@@ -30,7 +30,7 @@ namespace corpc
 
 		DISALLOW_COPY_MOVE_AND_ASSIGN(Epoller);
 
-		// void setTimerfd(int timer_fd);
+		void setTimerfd(int timer_fd);
 
 		// 修改Epoller中的事件
 		bool modEvent(FdEvent *fd_event, int fd, int op);
