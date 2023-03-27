@@ -19,15 +19,15 @@ namespace corpc
 	class Time
 	{
 	public:
-		Time(int64_t msSinceEpoch) : timeVal_(msSinceEpoch) {}
+		Time(int64_t msSinceEpoch) : m_timeVal(msSinceEpoch) {}
 
-		Time(const Time &time) { timeVal_ = time.timeVal_; }
+		Time(const Time &time) { m_timeVal = time.m_timeVal; }
 
-		Time(const Time &&time) { timeVal_ = time.timeVal_; }
+		Time(const Time &&time) { m_timeVal = time.m_timeVal; }
 
 		Time &operator=(const Time &time)
 		{
-			timeVal_ = time.timeVal_;
+			m_timeVal = time.m_timeVal;
 			return *this;
 		}
 
@@ -45,10 +45,10 @@ namespace corpc
 		// 到现在的时间
 		struct timespec timeIntervalFromNow();
 
-		int64_t getTimeVal() { return timeVal_; }
+		int64_t getTimeVal() { return m_timeVal; }
 
 	private:
-		int64_t timeVal_;
+		int64_t m_timeVal;
 
 		// 粗糙时间，每次调用now或UpdataRoughTime会更新该值，不需要精确时间的场所可以调用GetRoughTime获取该时间。单位为秒s
 		//  static volatile time_t _roughTime;

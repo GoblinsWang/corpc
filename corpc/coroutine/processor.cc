@@ -44,7 +44,7 @@ namespace corpc
 	// wait event on fd
 	void Processor::waitEvent(FdEvent::ptr fd_event, int fd, int event)
 	{
-		LogDebug("in waitEvent, fd = " << fd);
+		// LogDebug("in waitEvent, fd = " << fd);
 
 		fd_event->setCoroutine(m_pCurCoroutine);
 
