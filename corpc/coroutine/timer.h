@@ -20,7 +20,6 @@
 namespace corpc
 {
 	class Coroutine;
-	class Epoller;
 
 	// 定时器
 	class Timer

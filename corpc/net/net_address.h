@@ -32,13 +32,13 @@ namespace corpc
     {
 
     public:
-        IPAddress(const std::string &ip = "", uint16_t port = -1);
+        explicit IPAddress(const std::string &ip = "", uint16_t port = -1);
 
-        IPAddress(const std::string &addr);
+        explicit IPAddress(const std::string &addr);
 
-        IPAddress(uint16_t port);
+        explicit IPAddress(uint16_t port);
 
-        IPAddress(sockaddr_in addr);
+        explicit IPAddress(sockaddr_in addr);
 
         sockaddr *getSockAddr();
 

@@ -10,13 +10,14 @@
 #include <sys/eventfd.h>
 #include "utils.h"
 #include "../log/logger.h"
+#include "coroutine.h"
 struct epoll_event;
 
 namespace corpc
 {
-	class Coroutine;
 
 	class Processor;
+	class FdEvent;
 
 	class Epoller
 	{
@@ -29,16 +30,16 @@ namespace corpc
 
 		DISALLOW_COPY_MOVE_AND_ASSIGN(Epoller);
 
-		void setTimerfd(int timer_fd);
+		// void setTimerfd(int timer_fd);
 
 		// 修改Epoller中的事件
-		bool modEvent(Coroutine *pCo, int fd, int interesEv);
+		bool modEvent(FdEvent *fd_event, int fd, int op);
 
 		// 向Epoller中添加事件
-		bool addEvent(Coroutine *pCo, int fd, int interesEv);
+		bool addEvent(FdEvent *fd_event, int fd, int op);
 
 		// 从Epoller中移除事件
-		bool delEvent(Coroutine *pCo, int fd, int interesEv);
+		bool delEvent(int fd);
 
 		void addWakeupFd();
 
@@ -49,14 +50,15 @@ namespace corpc
 
 		inline bool isEpollFdUseful() { return m_epollFd < 0 ? false : true; };
 
+	public:
+		std::vector<int> m_fds; // alrady care events
+
 	private:
 		int m_timer_fd;
 
 		int m_wake_fd{-1}; // wakeup fd
 
 		int m_epollFd;
-
-		std::vector<int> m_fds; // alrady care events
 
 		std::mutex m_mutex;
 

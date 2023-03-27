@@ -48,7 +48,7 @@ namespace corpc
     {
         m_ip = std::string(inet_ntoa(m_addr.sin_addr));
         m_port = ntohs(m_addr.sin_port);
-        LogDebug("ip[" << m_ip << "], port[" << m_port << "]");
+        // LogDebug("ip[" << m_ip << "], port[" << m_port << "]");
     }
 
     IPAddress::IPAddress(const std::string &addr)

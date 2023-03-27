@@ -21,7 +21,7 @@ namespace corpc
 			2、管理fd的生命周期
 		其中有引用计数，若某一fd没人用了就会close
 	*/
-	class Socket
+	class Socket : public std::enable_shared_from_this<Socket>
 	{
 	public:
 		using ptr = std::shared_ptr<Socket>;
@@ -69,6 +69,11 @@ namespace corpc
 		NetAddress::ptr geLocalAddr()
 		{
 			return m_local_addr;
+		}
+
+		int getFd()
+		{
+			return m_fd;
 		}
 
 	private:

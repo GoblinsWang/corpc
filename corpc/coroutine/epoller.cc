@@ -10,7 +10,9 @@
 #include <errno.h>
 #include <sys/epoll.h>
 #include <unistd.h>
-
+#include <assert.h>
+#include <functional>
+#include <algorithm>
 namespace corpc
 {
 
@@ -24,7 +26,7 @@ namespace corpc
 			LogError("start server error. event_fd error");
 			_exit(0);
 		}
-		LogDebug("wakefd = " << m_wake_fd);
+		// LogDebug("wakefd = " << m_wake_fd);
 		addWakeupFd();
 	}
 
@@ -36,24 +38,22 @@ namespace corpc
 		}
 	};
 
-	void Epoller::setTimerfd(int timer_fd)
-	{
-		m_timer_fd = timer_fd;
-	}
+	// void Epoller::setTimerfd(int timer_fd)
+	// {
+	// 	m_timer_fd = timer_fd;
+	// }
 
 	// 修改Epoller中的事件
-	bool Epoller::modEvent(Coroutine *pCo, int fd, int op)
+	bool Epoller::modEvent(FdEvent *fd_event, int fd, int op)
 	{
-		if (!isEpollFdUseful())
-		{
-			return false;
-		}
+		auto it = find(m_fds.begin(), m_fds.end(), fd);
+		assert(it != m_fds.end());
+
 		LogDebug("modEvent, fd = " << fd);
 		struct epoll_event event;
 		memset(&event, 0, sizeof(event));
-		event.data.fd = fd;
 		event.events = op;
-		event.data.ptr = pCo;
+		event.data.ptr = fd_event;
 		if (::epoll_ctl(m_epollFd, EPOLL_CTL_MOD, fd, &event) < 0)
 		{
 			return false;
@@ -62,43 +62,45 @@ namespace corpc
 	}
 
 	// 向Epoller中添加事件
-	bool Epoller::addEvent(Coroutine *pCo, int fd, int op)
+	bool Epoller::addEvent(FdEvent *fd_event, int fd, int op)
 	{
-		if (!isEpollFdUseful())
-		{
-			return false;
-		}
+		auto it = find(m_fds.begin(), m_fds.end(), fd);
+		assert(it == m_fds.end());
+
 		LogDebug("addEvent, fd = " << fd);
 		struct epoll_event event;
 		memset(&event, 0, sizeof(event));
-		event.data.fd = fd;
 		event.events = op;
-		// event.data.ptr = pCo;
+		event.data.ptr = fd_event;
 		if (::epoll_ctl(m_epollFd, EPOLL_CTL_ADD, fd, &event) < 0)
 		{
 			return false;
 		}
+		m_fds.push_back(fd);
+
 		return true;
 	}
 
 	// 从Epoller中移除事件
-	bool Epoller::delEvent(Coroutine *pCo, int fd, int op)
+	bool Epoller::delEvent(int fd)
 	{
-		if (!isEpollFdUseful())
-		{
-			return false;
-		}
+		auto it = find(m_fds.begin(), m_fds.end(), fd);
+		assert(it != m_fds.end());
+		// LogTrace("delEvent, fd = " << fd);
 
 		if (::epoll_ctl(m_epollFd, EPOLL_CTL_DEL, fd, nullptr) < 0)
 		{
+			LogError("epoo_ctl error, fd[" << fd << "], sys errinfo = " << strerror(errno));
 			return false;
 		}
+		m_fds.erase(it);
 		return true;
 	}
 
 	void Epoller::addWakeupFd()
 	{
-		if (!addEvent(nullptr, m_wake_fd, EPOLLIN))
+		corpc::FdEvent::ptr fd_event = corpc::FdEventContainer::GetFdContainer()->getFdEvent(m_wake_fd);
+		if (!addEvent(fd_event.get(), m_wake_fd, EPOLLIN))
 		{
 			LogError("epoo_ctl error, fd[" << m_wake_fd << "], errno=" << errno);
 		}
@@ -107,7 +109,7 @@ namespace corpc
 
 	void Epoller::wakeup()
 	{
-		LogDebug("wakeup fd = " << m_wake_fd);
+		// LogDebug("wakeup fd = " << m_wake_fd);
 		uint64_t tmp = 1;
 		uint64_t *p = &tmp;
 		if (::write(m_wake_fd, p, 8) != 8)
@@ -131,14 +133,17 @@ namespace corpc
 			for (int i = 0; i < actEvNum; ++i)
 			{
 				epoll_event one_event = m_activeEpollEvents[i];
+				corpc::FdEvent *ptr = (corpc::FdEvent *)one_event.data.ptr;
+				int fd = ptr->getFd();
 				// LogDebug("fd = " << one_event.data.fd);
-				if (one_event.data.fd == m_wake_fd && (one_event.events & READ))
+				if (fd == m_wake_fd && (one_event.events & READ))
 				{
 					// wakeup
-					LogDebug("epoll wakeup, fd=[" << m_wake_fd << "]");
+					LogDebug(" is m_wake_fd, fd=[" << m_wake_fd << "]");
 					char buf[8];
 					while (1)
 					{
+						// LogDebug(" is m_wake_fd, fd=[" << m_wake_fd << "]");
 						if ((::read(m_wake_fd, buf, 8) == -1) && errno == EAGAIN)
 						{
 							break;
@@ -147,29 +152,24 @@ namespace corpc
 				}
 				else
 				{
-					corpc::FdEvent *ptr = (corpc::FdEvent *)one_event.data.ptr;
+					LogDebug("not m_wake_fd, fd=[" << fd << "]");
 
-					if (ptr != nullptr)
+					if ((!(one_event.events & EPOLLIN)) && (!(one_event.events & EPOLLOUT)))
 					{
-						int fd = ptr->getFd();
-
-						if ((!(one_event.events & EPOLLIN)) && (!(one_event.events & EPOLLOUT)))
+						LogError("socket [" << fd << "] occur other unknow event:[" << one_event.events << "], need unregister this socket");
+						delEvent(fd);
+					}
+					else
+					{
+						if (one_event.events & EPOLLIN)
 						{
-							LogError("socket [" << fd << "] occur other unknow event:[" << one_event.events << "], need unregister this socket");
-							m_processor->delEventInLoopThread(fd);
+							// LogDebug("socket [" << fd << "] occur read event");
+							activeCors.push_back(ptr->getCoroutine());
 						}
-						else
+						if (one_event.events & EPOLLOUT)
 						{
-							if (one_event.events & EPOLLIN)
-							{
-								// LogDebug("socket [" << fd << "] occur read event");
-								activeCors.push_back(ptr->getCoroutine());
-							}
-							if (one_event.events & EPOLLOUT)
-							{
-								// LogDebug("socket [" << fd << "] occur write event");
-								activeCors.push_back(ptr->getCoroutine());
-							}
+							// LogDebug("socket [" << fd << "] occur write event");
+							activeCors.push_back(ptr->getCoroutine());
 						}
 					}
 				}

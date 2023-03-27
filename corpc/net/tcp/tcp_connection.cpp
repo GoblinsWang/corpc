@@ -8,13 +8,9 @@
 // namespace corpc
 // {
 
-//     TcpConnection::TcpConnection(tinyrpc::TcpServer *tcp_svr, tinyrpc::IOThread *io_thread, int fd, int buff_size, NetAddress::ptr peer_addr)
-//         : m_io_thread(io_thread), m_fd(fd), m_state(Connected), m_connection_type(ServerConnection), m_peer_addr(peer_addr)
+//     TcpConnection::TcpConnection(corpc::TcpServer *tcp_svr, corpc::Processor *processor, int fd, int buff_size, NetAddress::ptr peer_addr)
+//         : m_tcp_svr(tcp_svr), m_processor(processor), m_fd(fd), m_state(Connected), m_connection_type(ServerConnection), m_peer_addr(peer_addr)
 //     {
-//         m_reactor = m_io_thread->getReactor();
-
-//         // DebugLog << "m_state=[" << m_state << "], =" << fd;
-//         m_tcp_svr = tcp_svr;
 
 //         m_codec = m_tcp_svr->getCodec();
 //         m_fd_event = FdEventContainer::GetFdContainer()->getFdEvent(fd);
@@ -25,7 +21,7 @@
 //         DebugLog << "succ create tcp connection[" << m_state << "], fd=" << fd;
 //     }
 
-//     // TcpConnection::TcpConnection(tinyrpc::TcpClient *tcp_cli, tinyrpc::Reactor *reactor, int fd, int buff_size, NetAddress::ptr peer_addr)
+//     // TcpConnection::TcpConnection(corpc::TcpClient *tcp_cli, corpc::Reactor *reactor, int fd, int buff_size, NetAddress::ptr peer_addr)
 //     //     : m_fd(fd), m_state(NotConnected), m_connection_type(ClientConnection), m_peer_addr(peer_addr)
 //     // {
 //     //     m_reactor = reactor;

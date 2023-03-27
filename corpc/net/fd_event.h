@@ -7,7 +7,7 @@
 #include <sys/epoll.h>
 #include <assert.h>
 #include <mutex>
-#include "../coroutine/processor.h"
+#include "socket.h"
 #include "../log/logger.h"
 #include "../coroutine/coroutine.h"
 #include "../coroutine/rw_mutex.h"
@@ -35,33 +35,15 @@ namespace corpc
 
         virtual ~FdEvent();
 
-        void handleEvent(int flag);
-
-        void setCallBack(IOEvent flag, std::function<void()> cb);
-
-        std::function<void()> getCallBack(IOEvent flag) const;
-
-        void addListenEvents(IOEvent event);
-
-        void delListenEvents(IOEvent event);
-
-        void updateToProcessor();
-
-        void unregisterFromProcessor();
+        void setSocket(corpc::Socket::ptr Sock);
 
         int getFd() const;
 
         void setFd(const int fd);
 
-        int getListenEvents() const;
-
         Processor *getProcessor() const;
 
         void setProcessor(Processor *r);
-
-        void setNonBlock();
-
-        bool isNonBlock();
 
         void setCoroutine(Coroutine *cor);
 
@@ -74,10 +56,8 @@ namespace corpc
 
     protected:
         int m_fd{-1};
-        std::function<void()> m_read_callback;
-        std::function<void()> m_write_callback;
 
-        int m_listen_events{0};
+        Socket::ptr m_socket = nullptr;
 
         Processor *m_processor{nullptr};
 

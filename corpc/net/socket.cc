@@ -14,16 +14,13 @@ namespace corpc
 	Socket::Socket(NetAddress::ptr addr)
 	{
 		m_local_addr = addr;
-		m_fd = ::socket(m_local_addr->getFamily(), SOCK_STREAM, 0);
+		m_fd = ::socket(m_local_addr->getFamily(), SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0); // | SOCK_NONBLOCK | SOCK_CLOEXEC
 		if (m_fd < 0)
 		{
 			LogError("start server error. socket error, sys error=" << strerror(errno));
 			_exit(0);
 		}
 		LogDebug("create listenfd succ, listenfd = " << m_fd);
-
-		// 设置为非阻塞模式
-		// setNonBolckSocket();
 
 		int val = 1;
 		if (setsockopt(m_fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) < 0)
@@ -68,7 +65,7 @@ namespace corpc
 	{
 		socklen_t len = 0;
 		int rt = 0;
-
+		m_peer_addr = nullptr;
 		if (m_local_addr->getFamily() == AF_INET)
 		{
 			sockaddr_in cli_addr;
@@ -76,9 +73,12 @@ namespace corpc
 			len = sizeof(cli_addr);
 
 			int cli_fd = ::accept(m_fd, (struct sockaddr *)&cli_addr, &len);
-			m_peer_addr = std::make_shared<IPAddress>(cli_addr);
 			if (cli_fd > 0)
+			{
+				LogTrace("new coming client fd, " << KV(cli_fd));
+				m_peer_addr = std::make_shared<IPAddress>(cli_addr);
 				return cli_fd;
+			}
 		}
 		else if (m_local_addr->getFamily() == AF_UNIX)
 		{
@@ -87,9 +87,11 @@ namespace corpc
 			len = sizeof(cli_addr);
 
 			int cli_fd = ::accept(m_fd, (struct sockaddr *)&cli_addr, &len);
-			m_peer_addr = std::make_shared<UnixDomainAddress>(cli_addr);
 			if (cli_fd > 0)
+			{
+				m_peer_addr = std::make_shared<UnixDomainAddress>(cli_addr);
 				return cli_fd;
+			}
 		}
 		else
 		{
@@ -97,9 +99,11 @@ namespace corpc
 			close(rt);
 			return -1;
 		}
-		LogDebug("error, no new client coming, errno=" << errno << "error=" << strerror(errno));
+		// LogDebug("error, no new client coming, errno=" << errno << "error=" << strerror(errno));
+		// LogTrace("no new client coming, yield this coroutine");
 
-		corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->waitEvent(m_fd, EPOLLIN | EPOLLPRI | EPOLLRDHUP | EPOLLHUP);
+		auto fd_event = corpc::FdEventContainer::GetFdContainer()->getFdEvent(m_fd);
+		corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->waitEvent(fd_event, m_fd, EPOLLIN | EPOLLPRI | EPOLLRDHUP | EPOLLHUP);
 
 		return accept();
 	}
@@ -116,7 +120,9 @@ namespace corpc
 		{
 			return read(buf, count);
 		}
-		corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->waitEvent(m_fd, EPOLLIN | EPOLLPRI | EPOLLRDHUP | EPOLLHUP);
+		LogTrace("there is no data can read, " << KV(m_fd) << ", yield this coroutine");
+		auto fd_event = corpc::FdEventContainer::GetFdContainer()->getFdEvent(m_fd);
+		corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->waitEvent(fd_event, m_fd, EPOLLIN | EPOLLPRI | EPOLLRDHUP | EPOLLHUP);
 		return ::read(m_fd, buf, count);
 	}
 
@@ -129,7 +135,9 @@ namespace corpc
 		{
 			return count;
 		}
-		corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->waitEvent(m_fd, EPOLLOUT);
+		LogTrace("there is no data can send, " << KV(m_fd) << "yield this coroutine");
+		auto fd_event = corpc::FdEventContainer::GetFdContainer()->getFdEvent(m_fd);
+		corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->waitEvent(fd_event, m_fd, EPOLLOUT);
 		return send((char *)buf + sendIdx, count - sendIdx);
 	}
 

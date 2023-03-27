@@ -16,17 +16,17 @@
 // // #include "corpc/net/tcp/abstract_slot.h"
 // // #include "corpc/net/net_address.h"
 // // #include "corpc/net/mutex.h"
+
+// #include "tcp_buffer.h"
 // #include "../common.h"
 // #include "../net/fd_event.h"
-// #include "tcp_buffer.h"
-// #include "../address.h"
-
+// #include "../net_address.h"
+// #include "../abstract_codec.h"
 // namespace corpc
 // {
 
 //     class TcpServer;
 //     class TcpClient;
-//     class IOThread;
 
 //     enum TcpConnectionState
 //     {
@@ -42,7 +42,7 @@
 //     public:
 //         using ptr = std::shared_ptr<TcpConnection>;
 
-//         TcpConnection(corpc::TcpServer *tcp_svr, corpc::IOThread *io_thread, int fd, int buff_size, NetAddress::ptr peer_addr);
+//         TcpConnection(corpc::TcpServer *tcp_svr, corpc::Processor *processor, int fd, int buff_size, NetAddress::ptr peer_addr);
 
 //         // TcpConnection(corpc::TcpClient *tcp_cli, corpc::Reactor *reactor, int fd, int buff_size, NetAddress::ptr peer_addr);
 
@@ -73,9 +73,9 @@
 
 //         AbstractCodeC::ptr getCodec() const;
 
-//         bool getResPackageData(const std::string &msg_req, TinyPbStruct::pb_ptr &pb_struct);
+//         // bool getResPackageData(const std::string &msg_req, TinyPbStruct::pb_ptr &pb_struct);
 
-//         void registerToTimeWheel();
+//         // void registerToTimeWheel();
 
 //         Coroutine::ptr getCoroutine();
 
@@ -100,8 +100,8 @@
 //     private:
 //         TcpServer *m_tcp_svr{nullptr};
 //         TcpClient *m_tcp_cli{nullptr};
-//         IOThread *m_io_thread{nullptr};
-//         Reactor *m_reactor{nullptr};
+
+//         Processor *m_processor{nullptr};
 
 //         int m_fd{-1};
 //         TcpConnectionState m_state{TcpConnectionState::Connected};
@@ -122,9 +122,9 @@
 
 //         bool m_is_over_time{false};
 
-//         std::map<std::string, std::shared_ptr<TinyPbStruct>> m_reply_datas;
+//         // std::map<std::string, std::shared_ptr<TinyPbStruct>> m_reply_datas;
 
-//         std::weak_ptr<AbstractSlot<TcpConnection>> m_weak_slot;
+//         // std::weak_ptr<AbstractSlot<TcpConnection>> m_weak_slot;
 
 //         RWMutex m_mutex;
 //     };

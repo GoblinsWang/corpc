@@ -18,7 +18,7 @@ namespace corpc
 
         ~TcpAcceptor();
 
-        int toAccept();
+        Socket::ptr toAccept();
 
     private:
         Socket::ptr m_listener;

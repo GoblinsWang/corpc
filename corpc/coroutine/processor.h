@@ -17,6 +17,8 @@
 #include "coroutine.h"
 #include "epoller.h"
 #include "timer.h"
+#include "lock_free_ring_buffer.h"
+#include "../net/fd_event.h"
 #include "../log/logger.h"
 
 namespace corpc
@@ -47,11 +49,7 @@ namespace corpc
 
 		DISALLOW_COPY_MOVE_AND_ASSIGN(Processor);
 
-		void waitEvent(int fd, int event);
-
-		void addEvent(int fd, epoll_event event, bool is_wakeup = true);
-
-		void delEvent(int fd, bool is_wakeup = true);
+		void waitEvent(FdEvent::ptr fd_event, int fd, int event);
 
 		void addTask(std::function<void()> task, bool is_wakeup = true);
 
@@ -74,11 +72,11 @@ namespace corpc
 		void join();
 
 		// 获取当前正在运行的协程
-		inline Coroutine *getCurRunningCo() { return pCurCoroutine_; };
+		inline Coroutine *getCurRunningCo() { return m_pCurCoroutine; };
 
 		inline Context *getMainCtx() { return &mainCtx_; }
 
-		inline size_t getCoCnt() { return coSet_.size(); }
+		inline size_t getCoCnt() { return m_coSet.size(); }
 
 		void goCo(Coroutine *co);
 
@@ -86,10 +84,6 @@ namespace corpc
 
 	public:
 		static Processor *GetProcessor();
-
-		void addEventInLoopThread(int fd, epoll_event event);
-
-		void delEventInLoopThread(int fd);
 
 		// 恢复运行指定协程
 		void resume(Coroutine *);
@@ -108,39 +102,35 @@ namespace corpc
 		Timer::ptr m_timer;
 
 		std::mutex m_mutex;
-		std::thread *pLoop_;
+		std::thread *m_pLoop;
 
 		std::map<int, epoll_event> m_pending_add_fds;
 		std::vector<int> m_pending_del_fds;
 		std::vector<std::function<void()>> m_pending_tasks;
 
-		// 新任务队列，使用双缓存队列
-		std::queue<Coroutine *> newCoroutines_[2];
-
-		// 新任务双缓存队列中正在运行的队列号，另一条用于添加任务
-		volatile int runningNewQue_;
+		LockFreeRingBuffer<Coroutine *, 1000> m_newCoroutines;
 
 		Spinlock newQueLock_;
 
-		Spinlock coPoolLock_;
+		Spinlock m_coPoolLock;
 
 		// std::mutex newCoQueMtx_;
 
 		// EventEpoller发现的活跃事件所放的列表
 		std::vector<Coroutine *> m_actCoroutines;
 
-		std::set<Coroutine *> coSet_;
+		std::set<Coroutine *> m_coSet;
 
 		// 定时器任务列表
-		std::vector<Coroutine *> timerExpiredCo_;
+		std::vector<Coroutine *> m_timerExpiredCo;
 
 		// 被移除的协程列表，要移除某一个事件会先放在该列表中，一次循环结束才会真正delete
-		std::vector<Coroutine *> removedCo_;
+		std::vector<Coroutine *> m_removedCo;
 
 		// 对象池
 		ObjPool<Coroutine> m_copool;
 
-		Coroutine *pCurCoroutine_;
+		Coroutine *m_pCurCoroutine;
 
 		Context mainCtx_;
 	};
