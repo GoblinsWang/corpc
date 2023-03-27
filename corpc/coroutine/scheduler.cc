@@ -8,21 +8,21 @@
 
 using namespace corpc;
 
-Scheduler *Scheduler::pScher_ = nullptr;
-std::mutex Scheduler::scherMtx_;
+Scheduler *Scheduler::m_pScheduler = nullptr;
+std::mutex Scheduler::m_scherMtx;
 
 Scheduler::Scheduler()
-	: proSelector_(processors_)
+	: m_proSelector(m_processors)
 {
 }
 
 Scheduler::~Scheduler()
 {
-	for (auto pP : processors_)
+	for (auto pP : m_processors)
 	{
 		pP->stop();
 	}
-	for (auto pP : processors_)
+	for (auto pP : m_processors)
 	{
 		pP->join();
 		delete pP;
@@ -34,24 +34,24 @@ bool Scheduler::startScheduler(int threadCnt)
 	for (int i = 0; i < threadCnt; ++i)
 	{
 		LogDebug("init " << i << " processor");
-		processors_.emplace_back(new Processor(i));
-		processors_[i]->loop();
+		m_processors.emplace_back(new Processor(i));
+		m_processors[i]->loop();
 	}
 	return true;
 }
 
 Scheduler *Scheduler::getScheduler()
 {
-	if (nullptr == pScher_)
+	if (nullptr == m_pScheduler)
 	{
-		std::lock_guard<std::mutex> lock(scherMtx_);
-		if (nullptr == pScher_)
+		std::lock_guard<std::mutex> lock(m_scherMtx);
+		if (nullptr == m_pScheduler)
 		{
-			pScher_ = new Scheduler();
-			pScher_->startScheduler(::get_nprocs_conf());
+			m_pScheduler = new Scheduler();
+			m_pScheduler->startScheduler(::get_nprocs_conf());
 		}
 	}
-	return pScher_;
+	return m_pScheduler;
 }
 
 Coroutine *Scheduler::getNewCoroutine(std::function<void()> &&coFunc, size_t stackSize)
@@ -77,7 +77,7 @@ Coroutine *Scheduler::getNewCoroutine(std::function<void()> &coFunc, size_t stac
 
 void Scheduler::join()
 {
-	for (auto pP : processors_)
+	for (auto pP : m_processors)
 	{
 		pP->join();
 	}
@@ -85,15 +85,15 @@ void Scheduler::join()
 
 Processor *Scheduler::getProcessor(int id)
 {
-	return processors_[id];
+	return m_processors[id];
 }
 
 Processor *Scheduler::getProcessor()
 {
-	return proSelector_.next();
+	return m_proSelector.next();
 }
 
 int Scheduler::getProCnt()
 {
-	return static_cast<int>(processors_.size());
+	return static_cast<int>(m_processors.size());
 }

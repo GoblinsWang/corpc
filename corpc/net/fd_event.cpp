@@ -7,15 +7,6 @@ namespace corpc
 
     static FdEventContainer *g_FdContainer = nullptr;
 
-    FdEvent::FdEvent(corpc::Processor *processor, int fd /*=-1*/) : m_fd(fd), m_processor(processor)
-    {
-        if (processor == nullptr)
-        {
-            LogError("create processor first");
-        }
-        // assert(processor != nullptr);
-    }
-
     FdEvent::FdEvent(int fd) : m_fd(fd)
     {
     }
@@ -30,21 +21,6 @@ namespace corpc
     int FdEvent::getFd() const
     {
         return m_fd;
-    }
-
-    void FdEvent::setFd(const int fd)
-    {
-        m_fd = fd;
-    }
-
-    Processor *FdEvent::getProcessor() const
-    {
-        return m_processor;
-    }
-
-    void FdEvent::setProcessor(Processor *pro)
-    {
-        m_processor = pro;
     }
 
     void FdEvent::setCoroutine(Coroutine *cor)

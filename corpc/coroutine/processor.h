@@ -23,7 +23,7 @@
 
 namespace corpc
 {
-	extern __thread int threadIdx; // 每个线程都会有一份
+	extern __thread int threadIdx; // each thread has one
 
 	enum processerStatus
 	{

@@ -2,7 +2,7 @@
 #define CORPC_COROUTINE_LOCK_FREE_RING_BUFFER_H
 
 #include <atomic>
-
+#include <cstddef>
 namespace corpc
 {
 

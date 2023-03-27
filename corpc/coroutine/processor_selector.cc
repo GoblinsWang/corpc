@@ -9,19 +9,19 @@ using namespace corpc;
 
 Processor *ProcessorSelector::next()
 {
-	int n = static_cast<int>(processors_.size());
+	int n = static_cast<int>(m_processors.size());
 	if (!n)
 	{
 		return nullptr;
 	}
 	int minCoProIdx = 0;
-	size_t minCoCnt = processors_.front()->getCoCnt();
+	size_t minCoCnt = m_processors.front()->getCoCnt();
 	switch (strategy_)
 	{
 	case MIN_EVENT_FIRST:
 		for (int i = 1; i < n; ++i)
 		{
-			size_t coCnt = processors_[i]->getCoCnt();
+			size_t coCnt = m_processors[i]->getCoCnt();
 			if (coCnt < minCoCnt)
 			{
 				minCoCnt = coCnt;
@@ -40,5 +40,5 @@ Processor *ProcessorSelector::next()
 		}
 		break;
 	}
-	return processors_[curPro_];
+	return m_processors[curPro_];
 };

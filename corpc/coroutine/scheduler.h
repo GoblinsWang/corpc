@@ -45,14 +45,14 @@ namespace corpc
 		bool startScheduler(int threadCnt);
 
 		// 日志管理器实例
-		static Scheduler *pScher_;
+		static Scheduler *m_pScheduler;
 
 		// 用于保护的锁，为了服务器执行效率，原则上不允许长久占有此锁
-		static std::mutex scherMtx_;
+		static std::mutex m_scherMtx;
 
-		std::vector<Processor *> processors_;
+		std::vector<Processor *> m_processors;
 
-		ProcessorSelector proSelector_;
+		ProcessorSelector m_proSelector;
 
 	private:
 		Spinlock m_coPoolLock;

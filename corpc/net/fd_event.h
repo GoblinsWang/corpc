@@ -29,19 +29,13 @@ namespace corpc
     public:
         using ptr = std::shared_ptr<FdEvent>;
 
-        FdEvent(corpc::Processor *processor, int fd = -1);
-
-        FdEvent(int fd);
+        explicit FdEvent(int fd);
 
         virtual ~FdEvent();
 
         void setSocket(corpc::Socket::ptr Sock);
 
         int getFd() const;
-
-        void setFd(const int fd);
-
-        Processor *getProcessor() const;
 
         void setProcessor(Processor *r);
 
@@ -58,8 +52,6 @@ namespace corpc
         int m_fd{-1};
 
         Socket::ptr m_socket = nullptr;
-
-        Processor *m_processor{nullptr};
 
         Coroutine *m_coroutine{nullptr};
     };
