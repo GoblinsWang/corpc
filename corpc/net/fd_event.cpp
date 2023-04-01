@@ -13,7 +13,7 @@ namespace corpc
 
     FdEvent::~FdEvent() {}
 
-    void FdEvent::setSocket(corpc::Socket::ptr sock)
+    void FdEvent::setSocket(NetSocket::ptr sock)
     {
         m_socket = sock;
     }

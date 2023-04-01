@@ -1,4 +1,4 @@
-#include "socket.h"
+#include "net_socket.h"
 #include "../coroutine/scheduler.h"
 
 #include <netinet/in.h>
@@ -11,7 +11,7 @@
 
 namespace corpc
 {
-	Socket::Socket(NetAddress::ptr addr)
+	NetSocket::NetSocket(NetAddress::ptr addr)
 	{
 		m_local_addr = addr;
 		m_fd = ::socket(m_local_addr->getFamily(), SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0); // | SOCK_NONBLOCK | SOCK_CLOEXEC
@@ -38,7 +38,7 @@ namespace corpc
 		}
 
 		LogDebug("set REUSEADDR succ");
-		rt = ::listen(m_fd, 10);
+		rt = ::listen(m_fd, 4096);
 		if (rt != 0)
 		{
 			LogError("start server error. listen error, fd= " << m_fd << ", errno=" << errno << ", error=" << strerror(errno));
@@ -46,7 +46,7 @@ namespace corpc
 		}
 	}
 
-	Socket::Socket(int fd, NetAddress::ptr addr)
+	NetSocket::NetSocket(int fd, NetAddress::ptr addr)
 	{
 		m_fd = fd;
 		m_local_addr = addr;
@@ -56,12 +56,13 @@ namespace corpc
 		}
 	}
 
-	Socket::~Socket()
+	NetSocket::~NetSocket()
 	{
+		LogTrace("socket over, fd = " << m_fd);
 		::close(m_fd);
 	}
 
-	int Socket::accept()
+	int NetSocket::accept()
 	{
 		socklen_t len = 0;
 		int rt = 0;
@@ -100,7 +101,7 @@ namespace corpc
 			return -1;
 		}
 		// LogDebug("error, no new client coming, errno=" << errno << "error=" << strerror(errno));
-		// LogTrace("no new client coming, yield this coroutine");
+		LogTrace("no new client coming, yield this coroutine, " << KV(m_fd));
 
 		auto fd_event = corpc::FdEventContainer::GetFdContainer()->getFdEvent(m_fd);
 		corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->waitEvent(fd_event, m_fd, EPOLLIN | EPOLLPRI | EPOLLRDHUP | EPOLLHUP);
@@ -109,7 +110,7 @@ namespace corpc
 	}
 
 	// 从socket中读数据
-	ssize_t Socket::read(void *buf, size_t count)
+	ssize_t NetSocket::read(void *buf, size_t count)
 	{
 		auto ret = ::read(m_fd, buf, count);
 		if (ret >= 0)
@@ -127,7 +128,7 @@ namespace corpc
 	}
 
 	// 往socket中写数据
-	ssize_t Socket::send(const void *buf, size_t count)
+	ssize_t NetSocket::send(const void *buf, size_t count)
 	{
 		// 忽略SIGPIPE信号
 		size_t sendIdx = ::send(m_fd, buf, count, MSG_NOSIGNAL);
@@ -141,13 +142,13 @@ namespace corpc
 		return send((char *)buf + sendIdx, count - sendIdx);
 	}
 
-	int Socket::shutdownWrite()
+	int NetSocket::shutdownWrite()
 	{
 		int ret = ::shutdown(m_fd, SHUT_WR);
 		return ret;
 	}
 
-	void Socket::setTcpNoDelay(bool on)
+	void NetSocket::setTcpNoDelay(bool on)
 	{
 		int val = on ? 1 : 0;
 		if (::setsockopt(m_fd, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val)) < 0)
@@ -157,7 +158,7 @@ namespace corpc
 		}
 	}
 
-	void Socket::setReuseAddr(bool on)
+	void NetSocket::setReuseAddr(bool on)
 	{
 		int val = on ? 1 : 0;
 		if (setsockopt(m_fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) < 0)
@@ -167,7 +168,7 @@ namespace corpc
 		}
 	}
 
-	void Socket::setReusePort(bool on)
+	void NetSocket::setReusePort(bool on)
 	{
 		int val = on ? 1 : 0;
 		if (::setsockopt(m_fd, SOL_SOCKET, SO_REUSEPORT, &val, sizeof(val)) < 0)
@@ -177,7 +178,7 @@ namespace corpc
 		}
 	}
 
-	int Socket::setKeepAlive(bool on)
+	int NetSocket::setKeepAlive(bool on)
 	{
 		int optval = on ? 1 : 0;
 		int ret = ::setsockopt(m_fd, SOL_SOCKET, SO_KEEPALIVE,
@@ -186,7 +187,7 @@ namespace corpc
 	}
 
 	// 设置socket为非阻塞的
-	int Socket::setNonBolckSocket()
+	int NetSocket::setNonBolckSocket()
 	{
 		auto flags = fcntl(m_fd, F_GETFL, 0);
 		int ret = fcntl(m_fd, F_SETFL, flags | O_NONBLOCK); // 设置成非阻塞模式
@@ -194,7 +195,7 @@ namespace corpc
 	}
 
 	// 设置socket为阻塞的
-	int Socket::setBlockSocket()
+	int NetSocket::setBlockSocket()
 	{
 		auto flags = fcntl(m_fd, F_GETFL, 0);
 		int ret = fcntl(m_fd, F_SETFL, flags & ~O_NONBLOCK); // 设置成阻塞模式；

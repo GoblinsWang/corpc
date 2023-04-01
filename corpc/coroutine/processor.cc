@@ -207,8 +207,8 @@ namespace corpc
 					// get timeout coroutine
 					m_timer->getExpiredCoroutines(m_timerExpiredCo);
 					size_t timerCoCnt = m_timerExpiredCo.size();
-					if (timerCoCnt)
-						LogDebug("the num of timeout coroutine : " << timerCoCnt);
+					// if (timerCoCnt)
+					// 	LogTrace("the num of timeout coroutine : " << timerCoCnt);
 					for (size_t i = 0; i < timerCoCnt; ++i)
 					{
 						resume(m_timerExpiredCo[i]);
@@ -222,7 +222,7 @@ namespace corpc
 						m_coSet.insert(pNewCo);
 						resume(pNewCo);
 					}
-
+					// LogTrace("m_coSet : " << KV(m_coSet.size()));
 					// 执行被唤醒的协程
 					size_t actCoCnt = m_actCoroutines.size();
 					for (size_t i = 0; i < actCoCnt; ++i)

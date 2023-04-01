@@ -34,7 +34,7 @@ void testCoroutine()
 								 if (conn->read((void *)buf, 1024) > 0)
 								 {
 									 conn->send(hello.c_str(), hello.size());
-									 corpc::co_sleep(1000); // 需要等一下，否则还没发送完毕就关闭了
+									 corpc::co_sleep(50); // 需要等一下，否则还没发送完毕就关闭了
 								 } });
 			}
 		},

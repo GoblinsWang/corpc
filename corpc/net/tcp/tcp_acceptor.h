@@ -5,7 +5,7 @@
 #include <memory>
 #include "../common.h"
 #include "../net_address.h"
-#include "../socket.h"
+#include "../net_socket.h"
 namespace corpc
 {
     class TcpAcceptor
@@ -18,10 +18,10 @@ namespace corpc
 
         ~TcpAcceptor();
 
-        Socket::ptr toAccept();
+        NetSocket::ptr toAccept();
 
     private:
-        Socket::ptr m_listener;
+        NetSocket::ptr m_listener;
     };
 }
 

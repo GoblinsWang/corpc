@@ -1,55 +1,56 @@
-// #ifndef CORPC_NET_TCP_TCP_SERVER_H
-// #define CORPC_NET_TCP_TCP_SERVER_H
+#ifndef CORPC_NET_TCP_TCP_SERVER_H
+#define CORPC_NET_TCP_TCP_SERVER_H
 
-// #include <map>
-// #include "../common.h"
-// #include "../fd_event.h"
-// #include "../abstract_codec.h"
-// #include "tcp_connection.h"
+#include <map>
+#include "../common.h"
+#include "../net_socket.h"
+#include "../fd_event.h"
+#include "../abstract_codec.h"
+#include "tcp_connection.h"
+#include "tcp_acceptor.h"
 
-// namespace corpc
-// {
+namespace corpc
+{
 
-//     class TcpServer
-//     {
+    class TcpServer
+    {
 
-//     public:
-//         typedef std::shared_ptr<TcpServer> ptr;
+    public:
+        typedef std::shared_ptr<TcpServer> ptr;
 
-//         TcpServer(NetAddress::ptr addr, ProtocalType type = TinyPb_Protocal);
+        TcpServer(NetAddress::ptr addr, ProtocalType type = TinyPb_Protocal);
 
-//         ~TcpServer();
+        ~TcpServer();
 
-//         void start();
+        void start();
 
-//         void addCoroutine(corpc::Coroutine *cor);
+        TcpConnection::ptr addClient(NetSocket::ptr net_sock);
 
-//     public:
-//         NetAddress::ptr getPeerAddr();
+        // bool registerService(std::shared_ptr<google::protobuf::Service> service);
 
-//         NetAddress::ptr getLocalAddr();
+        // bool registerHttpServlet(const std::string &url_path, HttpServlet::ptr servlet);
 
-//     private:
-//         void MainAcceptCorFunc();
+    private:
+        void MainAcceptCorFunc();
 
-//     private:
-//         NetAddress::ptr m_addr;
+    private:
+        NetAddress::ptr m_addr;
 
-//         TcpAcceptor::ptr m_acceptor;
+        TcpAcceptor::ptr m_acceptor;
 
-//         int m_tcp_counts{0};
+        int m_tcp_counts{0};
 
-//         bool m_is_stop_accept{false};
+        bool m_is_stop_accept{false};
 
-//         Coroutine::ptr m_accept_cor;
+        // AbstractDispatcher::ptr m_dispatcher;
 
-//         AbstractCodeC::ptr m_codec;
+        AbstractCodeC::ptr m_codec;
 
-//         ProtocalType m_protocal_type{TinyPb_Protocal};
+        ProtocalType m_protocal_type{TinyPb_Protocal};
 
-//         std::map<int, std::shared_ptr<TcpConnection>> m_clients;
-//     };
+        std::map<int, std::shared_ptr<TcpConnection>> m_clients;
+    };
 
-// }
+}
 
-// #endif
+#endif

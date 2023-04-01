@@ -7,7 +7,7 @@
 #include <sys/epoll.h>
 #include <assert.h>
 #include <mutex>
-#include "socket.h"
+#include "net_socket.h"
 #include "../log/logger.h"
 #include "../coroutine/coroutine.h"
 #include "../coroutine/rw_mutex.h"
@@ -33,7 +33,7 @@ namespace corpc
 
         virtual ~FdEvent();
 
-        void setSocket(corpc::Socket::ptr Sock);
+        void setSocket(NetSocket::ptr Sock);
 
         int getFd() const;
 
@@ -51,7 +51,7 @@ namespace corpc
     protected:
         int m_fd{-1};
 
-        Socket::ptr m_socket = nullptr;
+        NetSocket::ptr m_socket = nullptr;
 
         Coroutine *m_coroutine{nullptr};
     };

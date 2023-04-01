@@ -4,17 +4,17 @@ namespace corpc
 {
     TcpAcceptor::TcpAcceptor(NetAddress::ptr net_addr)
     {
-        m_listener = std::make_shared<Socket>(net_addr);
+        m_listener = std::make_shared<NetSocket>(net_addr);
     }
 
     TcpAcceptor::~TcpAcceptor()
     {
     }
 
-    Socket::ptr TcpAcceptor::toAccept()
+    NetSocket::ptr TcpAcceptor::toAccept()
     {
         int confd = m_listener->accept();
-        auto sock = std::make_shared<Socket>(confd, m_listener->getPeerAddr());
+        auto sock = std::make_shared<NetSocket>(confd, m_listener->getPeerAddr());
 
         return sock;
     }

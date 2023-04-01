@@ -86,7 +86,7 @@ namespace corpc
 	{
 		auto it = find(m_fds.begin(), m_fds.end(), fd);
 		assert(it != m_fds.end());
-		// LogTrace("delEvent, fd = " << fd);
+		LogTrace("delEvent, fd = " << fd);
 
 		if (::epoll_ctl(m_epollFd, EPOLL_CTL_DEL, fd, nullptr) < 0)
 		{

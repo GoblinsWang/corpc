@@ -1,5 +1,5 @@
-#ifndef CORPC_NET_SOCKET_H
-#define CORPC_NET_SOCKET_H
+#ifndef CORPC_NET_NET_SOCKET_H
+#define CORPC_NET_NET_SOCKET_H
 
 #include <arpa/inet.h>
 #include <sys/types.h>
@@ -14,25 +14,19 @@
 
 namespace corpc
 {
-	/*
-		Socket类，创建的Socket对象默认都是非阻塞的
-		职责：
-			1、提供fd操作的相关API
-			2、管理fd的生命周期
-		其中有引用计数，若某一fd没人用了就会close
-	*/
-	class Socket : public std::enable_shared_from_this<Socket>
+
+	class NetSocket : public std::enable_shared_from_this<NetSocket>
 	{
 	public:
-		using ptr = std::shared_ptr<Socket>;
+		using ptr = std::shared_ptr<NetSocket>;
 
 		// init a listener
-		explicit Socket(NetAddress::ptr addr);
+		explicit NetSocket(NetAddress::ptr addr);
 
 		// init a clientfd
-		explicit Socket(int fd, NetAddress::ptr addr);
+		explicit NetSocket(int fd, NetAddress::ptr addr);
 
-		~Socket();
+		~NetSocket();
 
 		void setTcpNoDelay(bool on);
 
@@ -61,17 +55,17 @@ namespace corpc
 		// 设置socket为阻塞的
 		int setBlockSocket();
 
-		NetAddress::ptr getPeerAddr()
+		inline NetAddress::ptr getPeerAddr()
 		{
 			return m_peer_addr;
 		}
 
-		NetAddress::ptr geLocalAddr()
+		inline NetAddress::ptr geLocalAddr()
 		{
 			return m_local_addr;
 		}
 
-		int getFd()
+		inline int getFd()
 		{
 			return m_fd;
 		}
