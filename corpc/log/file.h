@@ -13,7 +13,6 @@
 #include <io.h>
 #include <direct.h>
 #endif
-using namespace std;
 
 class FileManagement
 {
@@ -22,17 +21,17 @@ public:
 
     ~FileManagement();
 
-    bool createFilePath(string fileName);
+    bool createFilePath(std::string fileName);
 
-    bool createFile(string fileName);
+    bool createFile(std::string fileName);
 
-    bool verifyFileExistence(string fileName);
+    bool verifyFileExistence(std::string fileName);
 
     // bool verifyFileValidityDays(string fileName, string logOverlay);废除
 
-    bool fileRename(string oldFile, string newFile);
+    bool fileRename(std::string oldFile, std::string newFile);
 
-    long verifyFileSize(string fileName);
+    long verifyFileSize(std::string fileName);
 
     long getCurrentTime();
 };

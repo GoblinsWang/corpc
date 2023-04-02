@@ -2,12 +2,12 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <string.h>
-#include "../net_socket.h"
-#include "../common.h"
 #include "tcp_server.h"
 #include "tcp_connection.h"
+#include "../net_socket.h"
+#include "../common.h"
 // #include "../tcp_connection_time_wheel.h"
-// #include "tinyrpc/net/http/http_codec.h"
+#include "../http/http_codec.h"
 // #include "tinyrpc/net/http/http_dispatcher.h"
 // #include "tinyrpc/net/tinypb/tinypb_rpc_dispatcher.h"
 
@@ -16,18 +16,18 @@ namespace corpc
 
     TcpServer::TcpServer(NetAddress::ptr addr, ProtocalType type /*= TinyPb_Protocal*/) : m_addr(addr)
     {
-        // if (type == Http_Protocal)
-        // {
-        //     m_dispatcher = std::make_shared<HttpDispacther>();
-        //     m_codec = std::make_shared<HttpCodeC>();
-        //     m_protocal_type = Http_Protocal;
-        // }
-        // else
-        // {
-        //     m_dispatcher = std::make_shared<TinyPbRpcDispacther>();
-        //     m_codec = std::make_shared<TinyPbCodeC>();
-        //     m_protocal_type = TinyPb_Protocal;
-        // }
+        if (type == Http_Protocal)
+        {
+            m_dispatcher = std::make_shared<HttpDispacther>();
+            m_codec = std::make_shared<HttpCodeC>();
+            m_protocal_type = Http_Protocal;
+        }
+        else
+        {
+            // m_dispatcher = std::make_shared<TinyPbRpcDispacther>();
+            // m_codec = std::make_shared<TinyPbCodeC>();
+            // m_protocal_type = TinyPb_Protocal;
+        }
 
         // m_main_reactor = tinyrpc::Reactor::GetReactor();
         // m_main_reactor->setReactorType(MainReactor);
@@ -113,27 +113,27 @@ namespace corpc
     //     return true;
     // }
 
-    // bool TcpServer::registerHttpServlet(const std::string &url_path, HttpServlet::ptr servlet)
-    // {
-    //     if (m_protocal_type == Http_Protocal)
-    //     {
-    //         if (servlet)
-    //         {
-    //             dynamic_cast<HttpDispacther *>(m_dispatcher.get())->registerServlet(url_path, servlet);
-    //         }
-    //         else
-    //         {
-    //             ErrorLog << "register http servlet error, servlet ptr is nullptr";
-    //             return false;
-    //         }
-    //     }
-    //     else
-    //     {
-    //         ErrorLog << "register http servlet error. Just Http protocal server need to resgister HttpServlet";
-    //         return false;
-    //     }
-    //     return true;
-    // }
+    bool TcpServer::registerHttpServlet(const std::string &url_path, HttpServlet::ptr servlet)
+    {
+        if (m_protocal_type == Http_Protocal)
+        {
+            if (servlet)
+            {
+                dynamic_cast<HttpDispacther *>(m_dispatcher.get())->registerServlet(url_path, servlet);
+            }
+            else
+            {
+                LogError("register http servlet error, servlet ptr is nullptr");
+                return false;
+            }
+        }
+        else
+        {
+            LogError("register http servlet error. Just Http protocal server need to resgister HttpServlet");
+            return false;
+        }
+        return true;
+    }
 
     // void TcpServer::freshTcpConnection(TcpTimeWheel::TcpConnectionSlot::ptr slot)
     // {
@@ -171,14 +171,14 @@ namespace corpc
     //     return m_time_wheel;
     // }
 
-    // AbstractDispatcher::ptr TcpServer::getDispatcher()
-    // {
-    //     return m_dispatcher;
-    // }
+    AbstractDispatcher::ptr TcpServer::getDispatcher()
+    {
+        return m_dispatcher;
+    }
 
-    // AbstractCodeC::ptr TcpServer::getCodec()
-    // {
-    //     return m_codec;
-    // }
+    AbstractCodeC::ptr TcpServer::getCodec()
+    {
+        return m_codec;
+    }
 
 }

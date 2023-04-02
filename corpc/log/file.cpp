@@ -16,7 +16,7 @@ FileManagement::~FileManagement()
     // file.close();
 }
 
-bool FileManagement::createFilePath(string fileName)
+bool FileManagement::createFilePath(std::string fileName)
 {
     int len = fileName.length();
     if (!len)
@@ -69,20 +69,20 @@ bool FileManagement::createFilePath(string fileName)
     return true;
 }
 
-bool FileManagement::createFile(string fileName)
+bool FileManagement::createFile(std::string fileName)
 {
-    ofstream file;
-    file.open(fileName, ::ios::app | ios::out);
+    std::ofstream file;
+    file.open(fileName, std::ios::app | std::ios::out);
     if (!file)
     {
-        cout << "Failed to create file" << endl;
+        std::cout << "Failed to create file" << std::endl;
         return 0;
     }
     file.close();
     return 1;
 }
 
-bool FileManagement::verifyFileExistence(string fileName)
+bool FileManagement::verifyFileExistence(std::string fileName)
 {
 #ifdef __linux__
     return (access(fileName.data(), F_OK) != -1);
@@ -115,16 +115,16 @@ bool FileManagement::verifyFileExistence(string fileName)
 //     return false;
 // }
 
-bool FileManagement::fileRename(string oldFile, string newFile)
+bool FileManagement::fileRename(std::string oldFile, std::string newFile)
 {
     if (!rename(oldFile.data(), newFile.data()))
     {
-        cout << "File rename failed" << endl;
+        std::cout << "File rename failed" << std::endl;
     }
     return 0;
 }
 
-long FileManagement::verifyFileSize(string fileName)
+long FileManagement::verifyFileSize(std::string fileName)
 {
     struct stat statbuf;
     if (stat(fileName.data(), &statbuf) == 0)

@@ -2,12 +2,15 @@
 #define CORPC_NET_TCP_TCP_SERVER_H
 
 #include <map>
+#include "tcp_connection.h"
+#include "tcp_acceptor.h"
 #include "../common.h"
 #include "../net_socket.h"
 #include "../fd_event.h"
 #include "../abstract_codec.h"
-#include "tcp_connection.h"
-#include "tcp_acceptor.h"
+#include "../abstract_dispatcher.h"
+#include "../http/http_dispatcher.h"
+#include "../http/http_servlet.h"
 
 namespace corpc
 {
@@ -28,7 +31,12 @@ namespace corpc
 
         // bool registerService(std::shared_ptr<google::protobuf::Service> service);
 
-        // bool registerHttpServlet(const std::string &url_path, HttpServlet::ptr servlet);
+        bool registerHttpServlet(const std::string &url_path, HttpServlet::ptr servlet);
+
+    public:
+        AbstractDispatcher::ptr getDispatcher();
+
+        AbstractCodeC::ptr getCodec();
 
     private:
         void MainAcceptCorFunc();
@@ -42,7 +50,7 @@ namespace corpc
 
         bool m_is_stop_accept{false};
 
-        // AbstractDispatcher::ptr m_dispatcher;
+        AbstractDispatcher::ptr m_dispatcher;
 
         AbstractCodeC::ptr m_codec;
 

@@ -106,5 +106,6 @@
     "timer": "cpp",
     "future": "cpp"
   },
-  "cmake.sourceDirectory": "${workspaceFolder}/example"
+  "cmake.sourceDirectory": "${workspaceFolder}/example",
+  "C_Cpp.errorSquiggles": "enabled"
 }

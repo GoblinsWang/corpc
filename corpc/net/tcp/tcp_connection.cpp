@@ -11,7 +11,7 @@ namespace corpc
         : m_tcp_svr(tcp_svr), m_netsock(net_sock), m_state(Connected), m_connection_type(ServerConnection)
     {
 
-        // m_codec = m_tcp_svr->getCodec();
+        m_codec = m_tcp_svr->getCodec();
         m_fd_event = FdEventContainer::GetFdContainer()->getFdEvent(m_netsock->getFd());
         initBuffer(buff_size);
 
@@ -31,7 +31,7 @@ namespace corpc
     //     m_fd_event->setReactor(m_reactor);
     //     initBuffer(buff_size);
 
-    //     DebugLog << "succ create tcp connection[NotConnected]";
+    //     LogDebug("succ create tcp connection[NotConnected]";
     // }
 
     void TcpConnection::initServer()
@@ -181,7 +181,7 @@ namespace corpc
 
     void TcpConnection::execute()
     {
-        // DebugLog << "begin to do execute";
+        LogDebug("begin to do execute");
 
         // it only server do this
         while (m_read_buffer->readAble() > 0)
@@ -189,7 +189,7 @@ namespace corpc
             std::shared_ptr<AbstractData> data;
             if (m_codec->getProtocalType() == TinyPb_Protocal)
             {
-                data = std::make_shared<TinyPbStruct>();
+                // data = std::make_shared<TinyPbStruct>();
             }
             else
             {
@@ -203,12 +203,12 @@ namespace corpc
                 LogError("it parse request error of fd " << m_netsock->getFd());
                 break;
             }
-            // DebugLog << "it parse request success";
+            LogDebug("it parse request success");
             if (m_connection_type == ServerConnection)
             {
-                // DebugLog << "to dispatch this package";
+                LogDebug("to dispatch this package");
                 m_tcp_svr->getDispatcher()->dispatch(data.get(), this);
-                // DebugLog << "contine parse next package";
+                LogDebug("contine parse next package");
             }
             // else if (m_connection_type == ClientConnection)
             // {
@@ -222,55 +222,51 @@ namespace corpc
         }
     }
 
-    // void TcpConnection::output()
-    // {
-    //     if (m_is_over_time)
-    //     {
-    //         InfoLog << "over timer, skip output progress";
-    //         return;
-    //     }
-    //     while (true)
-    //     {
-    //         TcpConnectionState state = getState();
-    //         if (state != Connected)
-    //         {
-    //             break;
-    //         }
+    void TcpConnection::output()
+    {
+        if (m_is_over_time)
+        {
+            LogInfo("over timer, skip output progress");
+            return;
+        }
+        while (true)
+        {
+            TcpConnectionState state = getState();
+            if (state != Connected)
+            {
+                break;
+            }
 
-    //         if (m_write_buffer->readAble() == 0)
-    //         {
-    //             DebugLog << "app buffer of fd[" << m_fd << "] no data to write, to yiled this coroutine";
-    //             break;
-    //         }
+            if (m_write_buffer->readAble() == 0)
+            {
+                LogDebug("app buffer of fd[" << m_netsock->getFd() << "] no data to write, to yiled this coroutine");
+                break;
+            }
 
-    //         int total_size = m_write_buffer->readAble();
-    //         int read_index = m_write_buffer->readIndex();
-    //         int rt = write_hook(m_fd, &(m_write_buffer->m_buffer[read_index]), total_size);
-    //         // InfoLog << "write end";
-    //         if (rt <= 0)
-    //         {
-    //             ErrorLog << "write empty, error=" << strerror(errno);
-    //         }
+            int total_size = m_write_buffer->readAble();
+            int read_index = m_write_buffer->readIndex();
 
-    //         DebugLog << "succ write " << rt << " bytes";
-    //         m_write_buffer->recycleRead(rt);
-    //         DebugLog << "recycle write index =" << m_write_buffer->writeIndex() << ", read_index =" << m_write_buffer->readIndex() << "readable = " << m_write_buffer->readAble();
-    //         InfoLog << "send[" << rt << "] bytes data to [" << m_peer_addr->toString() << "], fd [" << m_fd << "]";
-    //         if (m_write_buffer->readAble() <= 0)
-    //         {
-    //             // InfoLog << "send all data, now unregister write event on reactor and yield Coroutine";
-    //             InfoLog << "send all data, now unregister write event and break";
-    //             // m_fd_event->delListenEvents(IOEvent::WRITE);
-    //             break;
-    //         }
+            int rt = m_netsock->send(&(m_write_buffer->m_buffer[read_index]), total_size);
 
-    //         if (m_is_over_time)
-    //         {
-    //             InfoLog << "over timer, now break write function";
-    //             break;
-    //         }
-    //     }
-    // }
+            LogDebug("succ write " << rt << " bytes");
+            m_write_buffer->recycleRead(rt);
+            LogDebug("recycle write index =" << m_write_buffer->writeIndex() << ", read_index =" << m_write_buffer->readIndex() << "readable = " << m_write_buffer->readAble());
+            LogInfo("send[" << rt << "] bytes data to [" << m_peer_addr->toString() << "], fd [" << m_netsock->getFd() << "]");
+            if (m_write_buffer->readAble() <= 0)
+            {
+                // InfoLog << "send all data, now unregister write event on reactor and yield Coroutine";
+                LogInfo("send all data, now unregister write event and break");
+                // m_fd_event->delListenEvents(IOEvent::WRITE);
+                break;
+            }
+
+            if (m_is_over_time)
+            {
+                LogInfo("over timer, now break write function");
+                break;
+            }
+        }
+    }
 
     void TcpConnection::clearClient()
     {
@@ -291,7 +287,7 @@ namespace corpc
     //     TcpConnectionState state = getState();
     //     if (state == Closed || state == NotConnected)
     //     {
-    //         DebugLog << "this client has closed";
+    //         LogDebug("this client has closed";
     //         return;
     //     }
     //     setState(HalfClosing);
@@ -319,19 +315,19 @@ namespace corpc
     //     auto it = m_reply_datas.find(msg_req);
     //     if (it != m_reply_datas.end())
     //     {
-    //         DebugLog << "return a resdata";
+    //         LogDebug("return a resdata";
     //         pb_struct = it->second;
     //         m_reply_datas.erase(it);
     //         return true;
     //     }
-    //     DebugLog << msg_req << "|reply data not exist";
+    //     LogDebug(msg_req << "|reply data not exist";
     //     return false;
     // }
 
-    // AbstractCodeC::ptr TcpConnection::getCodec() const
-    // {
-    //     return m_codec;
-    // }
+    AbstractCodeC::ptr TcpConnection::getCodec() const
+    {
+        return m_codec;
+    }
 
     // TcpConnectionState TcpConnection::getState()
     // {

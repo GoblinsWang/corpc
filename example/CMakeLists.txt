@@ -16,10 +16,11 @@ include_directories(${PROJECT_SOURCE_DIR})
 aux_source_directory(../corpc/coroutine COR)
 aux_source_directory(../corpc/net NET)
 aux_source_directory(../corpc/net/tcp TCP)
+aux_source_directory(../corpc/net/http HTTP)
 aux_source_directory(../corpc/log LOG)
 
 # 生成可执行文件
-add_executable(test test_acceptor.cc ${COR} ${LOG} ${NET} ${TCP})
+add_executable(test test_acceptor.cc ${COR} ${LOG} ${NET} ${TCP} ${HTTP})
 target_link_libraries(test pthread)
 
 

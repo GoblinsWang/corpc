@@ -4,12 +4,6 @@
 #include <memory>
 #include <vector>
 #include <queue>
-// #include "corpc/comm/log.h"
-// #include "corpc/net/fd_event.h"
-// #include "corpc/net/reactor.h"
-// #include "corpc/net/tcp/tcp_buffer.h"
-// #include "corpc/coroutine/coroutine.h"
-// #include "corpc/net/http/http_request.h"
 // #include "corpc/net/tinypb/tinypb_codec.h"
 // #include "corpc/net/tcp/io_thread.h"
 // #include "corpc/net/tcp/tcp_connection_time_wheel.h"
@@ -23,6 +17,8 @@
 #include "../net_address.h"
 #include "../abstract_codec.h"
 #include "../net_socket.h"
+#include "../http/http_request.h"
+
 namespace corpc
 {
 
