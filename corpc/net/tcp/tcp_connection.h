@@ -121,7 +121,7 @@ namespace corpc
 
         // std::weak_ptr<AbstractSlot<TcpConnection>> m_weak_slot;
 
-        RWMutex m_mutex;
+        RWMutex m_rwmutex;
     };
 
 }

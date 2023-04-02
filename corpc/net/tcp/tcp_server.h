@@ -21,7 +21,7 @@ namespace corpc
     public:
         typedef std::shared_ptr<TcpServer> ptr;
 
-        TcpServer(NetAddress::ptr addr, ProtocalType type = TinyPb_Protocal);
+        TcpServer(NetAddress::ptr addr, ProtocalType type = Http_Protocal);
 
         ~TcpServer();
 

@@ -1,7 +1,7 @@
 #include <map>
 #include <string>
 #include "string_util.h"
-#include "common.h"
+#include "../common.h"
 
 namespace corpc
 {

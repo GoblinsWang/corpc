@@ -21,7 +21,7 @@ namespace corpc
 
     void HttpCodeC::encode(TcpBuffer *buf, AbstractData *data)
     {
-        LogDebug("test encode");
+        LogDebug("------test encode------");
         HttpResponse *response = dynamic_cast<HttpResponse *>(data);
         response->encode_succ = false;
 
@@ -37,12 +37,12 @@ namespace corpc
         buf->writeToBuffer(http_res.c_str(), http_res.length());
         LogDebug("succ encode and write to buffer, writeindex=" << buf->writeIndex());
         response->encode_succ = true;
-        LogDebug("test encode end");
+        LogDebug("------test encode end------");
     }
 
     void HttpCodeC::decode(TcpBuffer *buf, AbstractData *data)
     {
-        LogDebug("test http decode start");
+        LogDebug("------test http decode start------");
         std::string strs = "";
         if (!buf || !data)
         {
@@ -145,7 +145,7 @@ namespace corpc
         request->decode_succ = true;
         data = request;
 
-        LogDebug("test http decode end");
+        LogDebug("------test http decode end------");
     }
 
     bool HttpCodeC::parseHttpRequestLine(HttpRequest *requset, const std::string &tmp)
@@ -159,7 +159,7 @@ namespace corpc
             return false;
         }
         std::string method = tmp.substr(0, s1);
-        std::transform(method.begin(), method.end(), method.begin(), toupper);
+        std::transform(method.begin(), method.end(), method.begin(), ::toupper);
         if (method == "GET")
         {
             requset->m_request_method = HttpMethod::GET;
@@ -175,7 +175,7 @@ namespace corpc
         }
 
         std::string version = tmp.substr(s2 + 1, tmp.length() - s2 - 1);
-        std::transform(version.begin(), version.end(), version.begin(), toupper);
+        std::transform(version.begin(), version.end(), version.begin(), ::toupper);
         if (version != "HTTP/1.1" && version != "HTTP/1.0")
         {
             LogError("parse http request request line error, not support http version:" << version);
@@ -215,7 +215,7 @@ namespace corpc
         if (j == url.npos)
         {
             requset->m_request_path = url;
-            LogDebug("http request path:" << requset->m_request_path << "and query is empty");
+            LogDebug("http request path:" << requset->m_request_path << " and query is empty");
             return true;
         }
         requset->m_request_path = url.substr(0, j);

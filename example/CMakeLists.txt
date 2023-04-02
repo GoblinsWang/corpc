@@ -14,14 +14,19 @@ include_directories(${PROJECT_SOURCE_DIR})
 
 # 定义SRC变量，其值为当前目录下所有的源代码文件
 aux_source_directory(../corpc/coroutine COR)
+aux_source_directory(../corpc/log LOG)
 aux_source_directory(../corpc/net NET)
 aux_source_directory(../corpc/net/tcp TCP)
 aux_source_directory(../corpc/net/http HTTP)
-aux_source_directory(../corpc/log LOG)
+aux_source_directory(../corpc/net/comm COMM)
 
-# 生成可执行文件
-add_executable(test test_acceptor.cc ${COR} ${LOG} ${NET} ${TCP} ${HTTP})
-target_link_libraries(test pthread)
+# test_acceptor
+add_executable(test_acceptor test_acceptor.cc ${COR} ${LOG} ${NET} ${TCP} ${HTTP} ${COMM})
+target_link_libraries(test_acceptor pthread)
+
+# test_acceptor
+add_executable(test_httpserver test_httpserver.cc ${COR} ${LOG} ${NET} ${TCP} ${HTTP} ${COMM})
+target_link_libraries(test_httpserver pthread)
 
 
 

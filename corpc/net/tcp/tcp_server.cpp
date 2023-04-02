@@ -84,7 +84,7 @@ namespace corpc
         }
         else
         {
-            LogDebug("fd " << net_sock->getFd() << "did't exist, new it");
+            LogDebug("fd " << net_sock->getFd() << ", did't exist, new it");
             TcpConnection::ptr conn = std::make_shared<TcpConnection>(this, net_sock, 128);
             m_clients.insert(std::make_pair(net_sock->getFd(), conn));
             return conn;

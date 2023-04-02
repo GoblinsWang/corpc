@@ -89,7 +89,7 @@ namespace corpc
         std::string toString() const;
 
     private:
-        std::string m_path;
+        std::string m_path = "";
         sockaddr_un m_addr;
     };
 

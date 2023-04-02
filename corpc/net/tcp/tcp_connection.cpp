@@ -116,9 +116,9 @@ namespace corpc
             {
                 m_read_buffer->recycleWrite(rt);
             }
-            LogDebug("m_read_buffer size=" << m_read_buffer->getBufferVector().size() << "rd=" << m_read_buffer->readIndex() << "wd=" << m_read_buffer->writeIndex());
+            LogDebug("m_read_buffer size = " << m_read_buffer->getBufferVector().size() << ", rd=" << m_read_buffer->readIndex() << ", wd=" << m_read_buffer->writeIndex());
 
-            LogDebug("read data back, fd=" << m_netsock->getFd());
+            LogDebug("read data back, fd = " << m_netsock->getFd());
             count += rt;
             if (m_is_over_time)
             {
@@ -167,7 +167,8 @@ namespace corpc
         {
             LogError("not read all data in socket buffer");
         }
-        LogInfo("recv [" << count << "] bytes data from [" << m_peer_addr->toString() << "], fd [" << m_netsock->getFd() << "]");
+
+        LogInfo("recv [" << count << "] bytes data from [" << m_netsock->geLocalAddr()->toString() << "], fd [" << m_netsock->getFd() << "]");
 
         // if (m_connection_type == ServerConnection)
         // {
@@ -251,7 +252,7 @@ namespace corpc
             LogDebug("succ write " << rt << " bytes");
             m_write_buffer->recycleRead(rt);
             LogDebug("recycle write index =" << m_write_buffer->writeIndex() << ", read_index =" << m_write_buffer->readIndex() << "readable = " << m_write_buffer->readAble());
-            LogInfo("send[" << rt << "] bytes data to [" << m_peer_addr->toString() << "], fd [" << m_netsock->getFd() << "]");
+            LogInfo("send[" << rt << "] bytes data to [" << m_netsock->geLocalAddr()->toString() << "], fd [" << m_netsock->getFd() << "]");
             if (m_write_buffer->readAble() <= 0)
             {
                 // InfoLog << "send all data, now unregister write event on reactor and yield Coroutine";
@@ -300,15 +301,15 @@ namespace corpc
     //     shutdown(m_fd_event->getFd(), SHUT_RDWR);
     // }
 
-    // TcpBuffer *TcpConnection::getInBuffer()
-    // {
-    //     return m_read_buffer.get();
-    // }
+    TcpBuffer *TcpConnection::getInBuffer()
+    {
+        return m_read_buffer.get();
+    }
 
-    // TcpBuffer *TcpConnection::getOutBuffer()
-    // {
-    //     return m_write_buffer.get();
-    // }
+    TcpBuffer *TcpConnection::getOutBuffer()
+    {
+        return m_write_buffer.get();
+    }
 
     // bool TcpConnection::getResPackageData(const std::string &msg_req, TinyPbStruct::pb_ptr &pb_struct)
     // {
@@ -329,22 +330,22 @@ namespace corpc
         return m_codec;
     }
 
-    // TcpConnectionState TcpConnection::getState()
-    // {
-    //     TcpConnectionState state;
-    //     RWMutex::ReadLock lock(m_mutex);
-    //     state = m_state;
-    //     lock.unlock();
+    TcpConnectionState TcpConnection::getState()
+    {
+        TcpConnectionState state;
+        m_rwmutex.rlock();
+        state = m_state;
+        m_rwmutex.runlock();
 
-    //     return state;
-    // }
+        return state;
+    }
 
-    // void TcpConnection::setState(const TcpConnectionState &state)
-    // {
-    //     RWMutex::WriteLock lock(m_mutex);
-    //     m_state = state;
-    //     lock.unlock();
-    // }
+    void TcpConnection::setState(const TcpConnectionState &state)
+    {
+        m_rwmutex.wlock();
+        m_state = state;
+        m_rwmutex.wunlock();
+    }
 
     // void TcpConnection::setOverTimeFlag(bool value)
     // {

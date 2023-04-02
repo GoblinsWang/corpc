@@ -7,10 +7,10 @@
 using namespace corpc;
 
 Logger *Logger::singleObject = nullptr;
-mutex *Logger::mutex_log = new (mutex);
-mutex *Logger::mutex_file = new (mutex);
-mutex *Logger::mutex_queue = new (mutex);
-mutex *Logger::mutex_terminal = new (mutex);
+std::mutex Logger::mutex_log;
+std::mutex Logger::mutex_file;
+std::mutex Logger::mutex_queue;
+std::mutex Logger::mutex_terminal;
 
 Logger::Logger()
 {
@@ -23,12 +23,12 @@ Logger::~Logger()
 
 Logger *Logger::getInstance()
 {
-    mutex_log->lock();
+    mutex_log.lock();
     if (singleObject == nullptr)
     {
         singleObject = new Logger();
     }
-    mutex_log->unlock();
+    mutex_log.unlock();
     return singleObject;
 }
 
@@ -48,7 +48,7 @@ void Logger::initLogConfig()
     coutColor["Trace"] = "";
 #endif
 
-    map<string, string *> flogConfInfo;
+    std::map<std::string, std::string *> flogConfInfo;
     flogConfInfo["logSwitch"] = &this->settings.logSwitch;
     flogConfInfo["logFileSwitch"] = &this->settings.logFileSwitch;
     flogConfInfo["logTerminalSwitch"] = &this->settings.logTerminalSwitch;
@@ -61,8 +61,8 @@ void Logger::initLogConfig()
     flogConfInfo["logOutputLevelTerminal"] = &this->settings.logOutputLevelTerminal;
 
     bool isOpen = true;
-    string str;
-    ifstream file;
+    std::string str;
+    std::ifstream file;
     char str_c[100] = {0};
 #ifdef __linux__
     file.open("../log.conf");
@@ -72,7 +72,7 @@ void Logger::initLogConfig()
     if (!file.is_open())
     {
         isOpen = false;
-        cout << "File open failed" << endl;
+        std::cout << "File open failed" << std::endl;
     }
     while (getline(file, str))
     {
@@ -80,7 +80,7 @@ void Logger::initLogConfig()
         {
             continue;
         }
-        string str_copy = str;
+        std::string str_copy = str;
         int j = 0;
         for (unsigned int i = 0; i < str.length(); i++)
         {
@@ -118,9 +118,9 @@ void Logger::initLogConfig()
     bindTerminalCoutMap("2", terminalType::Debug);
     bindTerminalCoutMap("1", terminalType::Trace);
 
-    string filePathAndName = getFilePathAndName();
-    string filePath = getFilePath();
-    cout << filePathAndName << " : " << filePath << endl;
+    std::string filePathAndName = getFilePathAndName();
+    std::string filePath = getFilePath();
+    std::cout << filePathAndName << " : " << filePath << std::endl;
     if (settings.logFileSwitch == SWITCH_ON)
     {
         // 检查路径
@@ -135,7 +135,7 @@ void Logger::initLogConfig()
             long fileSize = filemanagement.verifyFileSize(filePathAndName);
             if (fileSize > (long)atoi(settings.logMixSize.data()) * MEGABYTES && settings.logBehavior == "1")
             {
-                string newFileName = getFilePathAndNameAndTime();
+                std::string newFileName = getFilePathAndNameAndTime();
                 filemanagement.fileRename(filePathAndName, newFileName);
                 filemanagement.createFile(filePathAndName);
             }
@@ -157,51 +157,51 @@ void Logger::ConfInfoPrint()
 #ifdef __linux__
     for (unsigned int i = 0; i < settings.logFilePath.size() + 15; i++)
     {
-        cout << GREEN << "-";
+        std::cout << GREEN << "-";
         if (i == (settings.logFilePath.size() + 15) / 2)
         {
-            cout << "Logger";
+            std::cout << "Logger";
         }
     }
-    cout << DEFA << endl;
-    cout << GREEN << ::left << setw(25) << "  日志开关　　" << settings.logSwitch << DEFA << endl;
-    cout << GREEN << ::left << setw(25) << "  文件输出　　" << settings.logFileSwitch << DEFA << endl;
-    cout << GREEN << ::left << setw(25) << "  终端输出开关" << settings.logTerminalSwitch << DEFA << endl;
-    cout << GREEN << ::left << setw(25) << "  文件输出等级" << settings.logOutputLevelFile << DEFA << endl;
-    cout << GREEN << ::left << setw(25) << "  终端输出等级" << settings.logOutputLevelTerminal << DEFA << endl;
-    cout << GREEN << ::left << setw(25) << "  日志队列策略" << settings.logFileQueueSwitch << DEFA << endl;
-    cout << GREEN << ::left << setw(25) << "  日志文件名称" << settings.logName << ".log" << DEFA << endl;
-    cout << GREEN << ::left << setw(25) << "  日志保存路径" << settings.logFilePath << DEFA << endl;
-    cout << GREEN << ::left << setw(25) << "  日志文件大小" << settings.logMixSize << "M" << DEFA << endl;
+    std::cout << DEFA << std::endl;
+    std::cout << GREEN << std::left << std::setw(25) << "  日志开关　　" << settings.logSwitch << DEFA << std::endl;
+    std::cout << GREEN << std::left << std::setw(25) << "  文件输出　　" << settings.logFileSwitch << DEFA << std::endl;
+    std::cout << GREEN << std::left << std::setw(25) << "  终端输出开关" << settings.logTerminalSwitch << DEFA << std::endl;
+    std::cout << GREEN << std::left << std::setw(25) << "  文件输出等级" << settings.logOutputLevelFile << DEFA << std::endl;
+    std::cout << GREEN << std::left << std::setw(25) << "  终端输出等级" << settings.logOutputLevelTerminal << DEFA << std::endl;
+    std::cout << GREEN << std::left << std::setw(25) << "  日志队列策略" << settings.logFileQueueSwitch << DEFA << std::endl;
+    std::cout << GREEN << std::left << std::setw(25) << "  日志文件名称" << settings.logName << ".log" << DEFA << std::endl;
+    std::cout << GREEN << std::left << std::setw(25) << "  日志保存路径" << settings.logFilePath << DEFA << std::endl;
+    std::cout << GREEN << std::left << std::setw(25) << "  日志文件大小" << settings.logMixSize << "M" << DEFA << std::endl;
     for (unsigned int i = 0; i < settings.logFilePath.size() + 25; i++)
     {
-        cout << GREEN << "-" << DEFA;
+        std::cout << GREEN << "-" << DEFA;
     }
-    cout << endl;
+    std::cout << std::endl;
 #elif _WIN32
     for (unsigned int i = 0; i < settings.logFilePath.size() + 15; i++)
     {
-        cout << "-";
+        std::cout << "-";
         if (i == (settings.logFilePath.size() + 15) / 2)
         {
-            cout << "Logger";
+            std::cout << "Logger";
         }
     }
-    cout << endl;
-    cout << ::left << setw(25) << "  日志开关　　" << logger.logSwitch << endl;
-    cout << ::left << setw(25) << "  文件输出　　" << logger.logFileSwitch << endl;
-    cout << ::left << setw(25) << "  终端输出开关" << logger.logTerminalSwitch << endl;
-    cout << ::left << setw(25) << "  文件输出等级" << logger.logOutputLevelFile << endl;
-    cout << ::left << setw(25) << "  终端输出等级" << logger.logOutputLevelTerminal << endl;
-    cout << ::left << setw(25) << "  日志队列策略" << logger.logFileQueueSwitch << endl;
-    cout << ::left << setw(25) << "  日志文件名称" << logger.logName << ".log" << endl;
-    cout << ::left << setw(25) << "  日志保存路径" << logger.logFilePath << endl;
-    cout << ::left << setw(25) << "  日志文件大小" << logger.logMixSize << "M" << endl;
+    std::cout << std::endl;
+    std::cout << std::left << std::setw(25) << "  日志开关　　" << logger.logSwitch << std::endl;
+    std::cout << std::left << std::setw(25) << "  文件输出　　" << logger.logFileSwitch << std::endl;
+    std::cout << std::left << std::setw(25) << "  终端输出开关" << logger.logTerminalSwitch << std::endl;
+    std::cout << std::left << std::setw(25) << "  文件输出等级" << logger.logOutputLevelFile << std::endl;
+    std::cout << std::left << std::setw(25) << "  终端输出等级" << logger.logOutputLevelTerminal << std::endl;
+    std::cout << std::left << std::setw(25) << "  日志队列策略" << logger.logFileQueueSwitch << std::endl;
+    std::cout << std::left << std::setw(25) << "  日志文件名称" << logger.logName << ".log" << std::endl;
+    std::cout << std::left << std::setw(25) << "  日志保存路径" << logger.logFilePath << std::endl;
+    std::cout << std::left << std::setw(25) << "  日志文件大小" << logger.logMixSize << "M" << std::endl;
     for (int i = 0; i < logger.logFilePath.size() + 25; i++)
     {
-        cout << "-";
+        std::cout << "-";
     }
-    cout << endl;
+    std::cout << std::endl;
 #endif
 }
 
@@ -220,17 +220,17 @@ bool Logger::getTerminalType(terminalType terminalCoutTyle)
     return singleObject->terminalCoutMap[terminalCoutTyle];
 }
 
-string Logger::getLogCoutTime()
+std::string Logger::getLogCoutTime()
 {
     time_t timep;
     time(&timep);
     char tmp[64];
     strftime(tmp, sizeof(tmp), "%Y-%m-%d %H:%M:%S", localtime(&timep));
-    string tmp_str = tmp;
+    std::string tmp_str = tmp;
     return SQUARE_BRACKETS_LEFT + tmp_str + SQUARE_BRACKETS_RIGHT;
 }
 
-string Logger::getLogNameTime()
+std::string Logger::getLogNameTime()
 {
     time_t timep;
     time(&timep);
@@ -239,22 +239,22 @@ string Logger::getLogNameTime()
     return tmp;
 }
 
-string Logger::getSourceFilePash()
+std::string Logger::getSourceFilePash()
 {
 #ifdef __linux__
     getcwd(sourceFilePath, sizeof(sourceFilePath) - 1);
 #elif _WIN32
     getcwd(sourceFilePash, sizeof(sourceFilePash) - 1);
 #endif
-    string sourceFilePash_str = sourceFilePath;
+    std::string sourceFilePash_str = sourceFilePath;
     return sourceFilePash_str + SLASH;
 }
-string Logger::getFilePath()
+std::string Logger::getFilePath()
 {
     return settings.logFilePath + SLASH;
 }
 
-string Logger::getFilePathAndName()
+std::string Logger::getFilePathAndName()
 {
 #ifdef __linux__
     return settings.logFilePath + SLASH + settings.logName + ".log";
@@ -263,36 +263,36 @@ string Logger::getFilePathAndName()
 #endif
 }
 
-string Logger::getFilePathAndNameAndTime()
+std::string Logger::getFilePathAndNameAndTime()
 {
     return settings.logFilePath + settings.logName + getLogNameTime() + ".log";
 }
 
-string Logger::getLogCoutProcessId()
+std::string Logger::getLogCoutProcessId()
 {
 #ifdef __linux__
-    return to_string(getpid());
+    return std::to_string(getpid());
 #elif _WIN32
     return to_string(getpid());
 //  return GetCurrentProcessId();
 #endif
 }
 
-string Logger::getLogCoutThreadId()
+std::string Logger::getLogCoutThreadId()
 {
 #ifdef __linux__
-    return to_string(syscall(__NR_gettid));
+    return std::to_string(syscall(__NR_gettid));
 #elif _WIN32
-    return to_string(GetCurrentThreadId());
+    return std::to_string(GetCurrentThreadId());
 #endif
 }
 
-string Logger::getLogCoutUserName()
+std::string Logger::getLogCoutUserName()
 {
 #ifdef __linux__
     struct passwd *my_info;
     my_info = getpwuid(getuid());
-    string name = my_info->pw_name;
+    std::string name = my_info->pw_name;
     return SPACE + name + SPACE;
 #elif _WIN32
     const int MAX_LEN = 100;
@@ -303,30 +303,30 @@ string Logger::getLogCoutUserName()
     int iLen = WideCharToMultiByte(CP_ACP, 0, szBuffer, -1, NULL, 0, NULL, NULL);
     char *chRtn = new char[iLen * sizeof(char)];
     WideCharToMultiByte(CP_ACP, 0, szBuffer, -1, chRtn, iLen, NULL, NULL);
-    string str(chRtn);
+    std::string str(chRtn);
     return " " + str + " ";
 #endif
 }
 
-bool Logger::logFileWrite(string messages, string message, string line_effd)
+bool Logger::logFileWrite(std::string messages, std::string message, std::string line_effd)
 {
-    string filePathAndName = getFilePathAndName();
+    std::string filePathAndName = getFilePathAndName();
 
     long fileSize = filemanagement.verifyFileSize(filePathAndName);
     if (fileSize > (long)atoi(settings.logMixSize.data()) * MEGABYTES && settings.logBehavior == "1")
     {
-        string newFileName = getFilePathAndNameAndTime();
+        std::string newFileName = getFilePathAndNameAndTime();
         filemanagement.fileRename(filePathAndName, newFileName);
         filemanagement.createFile(filePathAndName);
     }
     if (settings.logFileQueueSwitch == SWITCH_OFF)
     {
-        mutex_file->lock();
-        ofstream file;
-        file.open(filePathAndName, ::ios::app | ios::out);
+        mutex_file.lock();
+        std::ofstream file;
+        file.open(filePathAndName, std::ios::app | std::ios::out);
         file << messages << message << line_effd;
         file.close();
-        mutex_file->unlock();
+        mutex_file.unlock();
     }
     else
     {
@@ -335,42 +335,42 @@ bool Logger::logFileWrite(string messages, string message, string line_effd)
     return 1;
 }
 
-bool Logger::insertQueue(string messages, string filePathAndName)
+bool Logger::insertQueue(std::string messages, std::string filePathAndName)
 {
-    mutex_queue->lock();
+    mutex_queue.lock();
     messageQueue.push(messages);
     if (messageQueue.size() >= 5000)
     {
-        mutex_file->lock();
-        ofstream file;
-        file.open(filePathAndName, ::ios::app | ios::out);
+        mutex_file.lock();
+        std::ofstream file;
+        file.open(filePathAndName, std::ios::app | std::ios::out);
         while (!messageQueue.empty())
         {
             file << messageQueue.front();
             messageQueue.pop();
         }
         file.close();
-        mutex_file->unlock();
+        mutex_file.unlock();
     }
-    mutex_queue->unlock();
+    mutex_queue.unlock();
     return true;
 }
 
-string Logger::getLogSwitch()
+std::string Logger::getLogSwitch()
 {
     return settings.logSwitch;
 }
 
-string Logger::getLogFileSwitch()
+std::string Logger::getLogFileSwitch()
 {
     return settings.logFileSwitch;
 }
 
-string Logger::getLogTerminalSwitch()
+std::string Logger::getLogTerminalSwitch()
 {
     return settings.logTerminalSwitch;
 }
-string Logger::getCoutTypeColor(string colorType)
+std::string Logger::getCoutTypeColor(std::string colorType)
 {
 #ifdef __linux__
     return coutColor[colorType];
@@ -379,7 +379,7 @@ string Logger::getCoutTypeColor(string colorType)
 #endif
 }
 
-bool Logger::bindFileCoutMap(string value1, fileType value2)
+bool Logger::bindFileCoutMap(std::string value1, fileType value2)
 {
     if (settings.logOutputLevelFile.find(value1) != std::string::npos)
     {
@@ -392,7 +392,7 @@ bool Logger::bindFileCoutMap(string value1, fileType value2)
     return true;
 }
 
-bool Logger::bindTerminalCoutMap(string value1, terminalType value2)
+bool Logger::bindTerminalCoutMap(std::string value1, terminalType value2)
 {
     if (settings.logOutputLevelTerminal.find(value1) != std::string::npos)
     {
