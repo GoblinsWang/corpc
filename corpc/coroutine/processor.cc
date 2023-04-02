@@ -47,7 +47,6 @@ namespace corpc
 		// LogDebug("in waitEvent, fd = " << fd);
 
 		fd_event->setCoroutine(m_pCurCoroutine);
-
 		m_epoller->addEvent(fd_event.get(), fd, event);
 
 		yield();

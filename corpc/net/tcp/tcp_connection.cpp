@@ -73,153 +73,154 @@ namespace corpc
 
         while (!m_stop)
         {
-            // input();
+            input();
 
-            // execute();
+            execute();
 
-            // output();
+            output();
         }
         // TODO: clear this conn is a task of tcp_server
         LogInfo("this connection has already end loop");
     }
 
-    // void TcpConnection::input()
-    // {
-    //     if (m_is_over_time)
-    //     {
-    //         LogInfo("over timer, skip input progress");
-    //         return;
-    //     }
-    //     TcpConnectionState state = getState();
-    //     if (state == Closed || state == NotConnected)
-    //     {
-    //         return;
-    //     }
-    //     bool read_all = false;
-    //     bool close_flag = false;
-    //     int count = 0;
-    //     while (!read_all)
-    //     {
+    void TcpConnection::input()
+    {
+        if (m_is_over_time)
+        {
+            LogInfo("over timer, skip input progress");
+            return;
+        }
+        TcpConnectionState state = getState();
+        if (state == Closed || state == NotConnected)
+        {
+            return;
+        }
+        bool read_all = false;
+        bool close_flag = false;
+        int count = 0;
+        while (!read_all)
+        {
 
-    //         if (m_read_buffer->writeAble() == 0)
-    //         {
-    //             m_read_buffer->resizeBuffer(2 * m_read_buffer->getSize());
-    //         }
+            if (m_read_buffer->writeAble() == 0)
+            {
+                m_read_buffer->resizeBuffer(2 * m_read_buffer->getSize());
+            }
 
-    //         int read_count = m_read_buffer->writeAble();
-    //         int write_index = m_read_buffer->writeIndex();
+            int read_count = m_read_buffer->writeAble();
+            int write_index = m_read_buffer->writeIndex();
 
-    //         LogDebug("m_read_buffer size = " << m_read_buffer->getBufferVector().size() << " rd = " << m_read_buffer->readIndex() << " wd = " << m_read_buffer->writeIndex());
-    //         int rt = read_hook(m_fd, &(m_read_buffer->m_buffer[write_index]), read_count);
-    //         if (rt > 0)
-    //         {
-    //             m_read_buffer->recycleWrite(rt);
-    //         }
-    //         LogDebug("m_read_buffer size=" << m_read_buffer->getBufferVector().size() << "rd=" << m_read_buffer->readIndex() << "wd=" << m_read_buffer->writeIndex());
+            LogDebug("m_read_buffer size = " << m_read_buffer->getBufferVector().size() << " rd = " << m_read_buffer->readIndex() << " wd = " << m_read_buffer->writeIndex());
 
-    //         LogDebug("read data back, fd=" << m_netsock->getFd());
-    //         count += rt;
-    //         if (m_is_over_time)
-    //         {
-    //             LogInfo("over timer, now break read function");
-    //             break;
-    //         }
-    //         if (rt <= 0)
-    //         {
-    //             LogDebug("rt <= 0");
-    //             LogError("read empty while occur read event, because of peer close, fd= " << m_fd << ", sys error=" << strerror(errno) << ", now to clear tcp connection");
-    //             // this cor can destroy
-    //             close_flag = true;
-    //             break;
-    //         }
-    //         else
-    //         {
-    //             if (rt == read_count)
-    //             {
-    //                 LogDebug("read_count == rt");
-    //                 // is is possible read more data, should continue read
-    //                 continue;
-    //             }
-    //             else if (rt < read_count)
-    //             {
-    //                 LogDebug("read_count > rt");
-    //                 // read all data in socket buffer, skip out loop
-    //                 read_all = true;
-    //                 break;
-    //             }
-    //         }
-    //     }
-    //     if (close_flag)
-    //     {
-    //         clearClient();
-    //         LogDebug("peer close, now yield current coroutine, wait main thread clear this TcpConnection");
-    //         Coroutine::GetCurrentCoroutine()->setCanResume(false);
-    //         Coroutine::Yield();
-    //         // return;
-    //     }
+            int rt = m_netsock->read(&(m_read_buffer->m_buffer[write_index]), read_count);
+            if (rt > 0)
+            {
+                m_read_buffer->recycleWrite(rt);
+            }
+            LogDebug("m_read_buffer size=" << m_read_buffer->getBufferVector().size() << "rd=" << m_read_buffer->readIndex() << "wd=" << m_read_buffer->writeIndex());
 
-    //     if (m_is_over_time)
-    //     {
-    //         return;
-    //     }
+            LogDebug("read data back, fd=" << m_netsock->getFd());
+            count += rt;
+            if (m_is_over_time)
+            {
+                LogInfo("over timer, now break read function");
+                break;
+            }
+            if (rt <= 0)
+            {
+                LogDebug("rt <= 0");
+                LogError("read empty while occur read event, because of peer close, fd= " << m_netsock->getFd() << ", sys error=" << strerror(errno) << ", now to clear tcp connection");
+                // this cor can destroy
+                close_flag = true;
+                break;
+            }
+            else
+            {
+                if (rt == read_count)
+                {
+                    LogDebug("read_count == rt");
+                    // is is possible read more data, should continue read
+                    continue;
+                }
+                else if (rt < read_count)
+                {
+                    LogDebug("read_count > rt");
+                    // read all data in socket buffer, skip out loop
+                    read_all = true;
+                    break;
+                }
+            }
+        }
 
-    //     if (!read_all)
-    //     {
-    //         ErrorLog << "not read all data in socket buffer";
-    //     }
-    //     InfoLog << "recv [" << count << "] bytes data from [" << m_peer_addr->toString() << "], fd [" << m_fd << "]";
-    //     if (m_connection_type == ServerConnection)
-    //     {
-    //         TcpTimeWheel::TcpConnectionSlot::ptr tmp = m_weak_slot.lock();
-    //         if (tmp)
-    //         {
-    //             m_tcp_svr->freshTcpConnection(tmp);
-    //         }
-    //     }
-    // }
+        if (close_flag)
+        {
+            // set close status
+            clearClient();
+            return;
+        }
 
-    // void TcpConnection::execute()
-    // {
-    //     // DebugLog << "begin to do execute";
+        if (m_is_over_time)
+        {
+            return;
+        }
 
-    //     // it only server do this
-    //     while (m_read_buffer->readAble() > 0)
-    //     {
-    //         std::shared_ptr<AbstractData> data;
-    //         if (m_codec->getProtocalType() == TinyPb_Protocal)
-    //         {
-    //             data = std::make_shared<TinyPbStruct>();
-    //         }
-    //         else
-    //         {
-    //             data = std::make_shared<HttpRequest>();
-    //         }
+        if (!read_all)
+        {
+            LogError("not read all data in socket buffer");
+        }
+        LogInfo("recv [" << count << "] bytes data from [" << m_peer_addr->toString() << "], fd [" << m_netsock->getFd() << "]");
 
-    //         m_codec->decode(m_read_buffer.get(), data.get());
-    //         // DebugLog << "parse service_name=" << pb_struct.service_full_name;
-    //         if (!data->decode_succ)
-    //         {
-    //             ErrorLog << "it parse request error of fd " << m_fd;
-    //             break;
-    //         }
-    //         // DebugLog << "it parse request success";
-    //         if (m_connection_type == ServerConnection)
-    //         {
-    //             // DebugLog << "to dispatch this package";
-    //             m_tcp_svr->getDispatcher()->dispatch(data.get(), this);
-    //             // DebugLog << "contine parse next package";
-    //         }
-    //         else if (m_connection_type == ClientConnection)
-    //         {
-    //             // TODO:
-    //             std::shared_ptr<TinyPbStruct> tmp = std::dynamic_pointer_cast<TinyPbStruct>(data);
-    //             if (tmp)
-    //             {
-    //                 m_reply_datas.insert(std::make_pair(tmp->msg_req, tmp));
-    //             }
-    //         }
-    //     }
-    // }
+        // if (m_connection_type == ServerConnection)
+        // {
+        //     TcpTimeWheel::TcpConnectionSlot::ptr tmp = m_weak_slot.lock();
+        //     if (tmp)
+        //     {
+        //         m_tcp_svr->freshTcpConnection(tmp);
+        //     }
+        // }
+    }
+
+    void TcpConnection::execute()
+    {
+        // DebugLog << "begin to do execute";
+
+        // it only server do this
+        while (m_read_buffer->readAble() > 0)
+        {
+            std::shared_ptr<AbstractData> data;
+            if (m_codec->getProtocalType() == TinyPb_Protocal)
+            {
+                data = std::make_shared<TinyPbStruct>();
+            }
+            else
+            {
+                data = std::make_shared<HttpRequest>();
+            }
+
+            m_codec->decode(m_read_buffer.get(), data.get());
+
+            if (!data->decode_succ)
+            {
+                LogError("it parse request error of fd " << m_netsock->getFd());
+                break;
+            }
+            // DebugLog << "it parse request success";
+            if (m_connection_type == ServerConnection)
+            {
+                // DebugLog << "to dispatch this package";
+                m_tcp_svr->getDispatcher()->dispatch(data.get(), this);
+                // DebugLog << "contine parse next package";
+            }
+            // else if (m_connection_type == ClientConnection)
+            // {
+            //     // TODO:
+            //     std::shared_ptr<TinyPbStruct> tmp = std::dynamic_pointer_cast<TinyPbStruct>(data);
+            //     if (tmp)
+            //     {
+            //         m_reply_datas.insert(std::make_pair(tmp->msg_req, tmp));
+            //     }
+            // }
+        }
+    }
 
     // void TcpConnection::output()
     // {
@@ -271,22 +272,19 @@ namespace corpc
     //     }
     // }
 
-    // void TcpConnection::clearClient()
-    // {
-    //     if (getState() == Closed)
-    //     {
-    //         DebugLog << "this client has closed";
-    //         return;
-    //     }
-    //     // first unregister epoll event
-    //     m_fd_event->unregisterFromReactor();
+    void TcpConnection::clearClient()
+    {
+        if (getState() == Closed)
+        {
+            LogDebug("this client has closed");
+            return;
+        }
+        // stop read and write cor
+        m_stop = true;
 
-    //     // stop read and write cor
-    //     m_stop = true;
-
-    //     close(m_fd_event->getFd());
-    //     setState(Closed);
-    // }
+        // close(m_fd_event->getFd());
+        setState(Closed);
+    }
 
     // void TcpConnection::shutdownConnection()
     // {
