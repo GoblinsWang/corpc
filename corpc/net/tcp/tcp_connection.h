@@ -4,16 +4,10 @@
 #include <memory>
 #include <vector>
 #include <queue>
-// #include "corpc/net/tinypb/tinypb_codec.h"
-// #include "corpc/net/tcp/io_thread.h"
-// #include "corpc/net/tcp/tcp_connection_time_wheel.h"
-// #include "corpc/net/tcp/abstract_slot.h"
-// #include "corpc/net/net_address.h"
-// #include "corpc/net/mutex.h"
 
 #include "tcp_buffer.h"
+#include "tcp_connection_time_wheel.h"
 #include "../common.h"
-#include "../fd_event.h"
 #include "../net_address.h"
 #include "../abstract_codec.h"
 #include "../net_socket.h"
@@ -43,9 +37,9 @@ namespace corpc
 
         // TcpConnection(corpc::TcpClient *tcp_cli, corpc::Processor *processor, int fd, int buff_size, NetAddress::ptr peer_addr);
 
-        void setUpClient();
-
         ~TcpConnection();
+
+        void setUpClient();
 
         void initBuffer(int size);
 
@@ -70,7 +64,7 @@ namespace corpc
 
         // bool getResPackageData(const std::string &msg_req, TinyPbStruct::pb_ptr &pb_struct);
 
-        // void registerToTimeWheel();
+        void registerToTimeWheel();
 
         Coroutine::ptr getCoroutine();
 
@@ -119,7 +113,7 @@ namespace corpc
 
         // std::map<std::string, std::shared_ptr<TinyPbStruct>> m_reply_datas;
 
-        // std::weak_ptr<AbstractSlot<TcpConnection>> m_weak_slot;
+        std::weak_ptr<AbstractSlot<TcpConnection>> m_weak_slot;
 
         RWMutex m_rwmutex;
     };

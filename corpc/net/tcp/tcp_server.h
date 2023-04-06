@@ -4,9 +4,9 @@
 #include <map>
 #include "tcp_connection.h"
 #include "tcp_acceptor.h"
+#include "tcp_connection_time_wheel.h"
 #include "../common.h"
 #include "../net_socket.h"
-#include "../fd_event.h"
 #include "../abstract_codec.h"
 #include "../abstract_dispatcher.h"
 #include "../http/http_dispatcher.h"
@@ -33,13 +33,19 @@ namespace corpc
 
         bool registerHttpServlet(const std::string &url_path, HttpServlet::ptr servlet);
 
+        void freshTcpConnection(TcpTimeWheel::TcpConnectionSlot::ptr slot);
+
     public:
         AbstractDispatcher::ptr getDispatcher();
 
         AbstractCodeC::ptr getCodec();
 
+        TcpTimeWheel::ptr getTimeWheel();
+
     private:
         void MainAcceptCorFunc();
+
+        void ClearClientTimerFunc();
 
     private:
         NetAddress::ptr m_addr;
@@ -56,7 +62,11 @@ namespace corpc
 
         ProtocalType m_protocal_type{TinyPb_Protocal};
 
+        TcpTimeWheel::ptr m_time_wheel;
+
         std::map<int, std::shared_ptr<TcpConnection>> m_clients;
+
+        TimerEvent::ptr m_clear_clent_timer_event{nullptr};
     };
 
 }

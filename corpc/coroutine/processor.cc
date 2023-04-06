@@ -13,7 +13,6 @@
 
 namespace corpc
 {
-	__thread Processor *t_processor_ptr = nullptr;
 	__thread int threadIdx = -1;
 
 	Processor::Processor(int tid)
@@ -86,6 +85,27 @@ namespace corpc
 		}
 	}
 
+	Coroutine *Processor::getNewCoroutine(std::function<void()> &&coFunc, size_t stackSize)
+	{
+		Coroutine *pCo = nullptr;
+
+		{
+			SpinlockGuard lock(m_coPoolLock);
+			pCo = m_copool.new_obj(std::move(coFunc), stackSize);
+		}
+		return pCo;
+	}
+	Coroutine *Processor::getNewCoroutine(std::function<void()> &coFunc, size_t stackSize)
+	{
+		Coroutine *pCo = nullptr;
+
+		{
+			SpinlockGuard lock(m_coPoolLock);
+			pCo = m_copool.new_obj(coFunc, stackSize);
+		}
+		return pCo;
+	}
+
 	void Processor::addCoroutine(corpc::Coroutine *pCo, bool is_wakeup /*=true*/)
 	{
 		pCo->setProcessor(this);
@@ -120,7 +140,7 @@ namespace corpc
 		{
 			return;
 		}
-
+		// LogInfo("in Processor::resume()");
 		m_pCurCoroutine = pCo;
 		pCo->resume();
 	}
@@ -134,10 +154,16 @@ namespace corpc
 		mainCtx_.swapToMe(m_pCurCoroutine->getCtx());
 	}
 
-	void Processor::wait(Time time)
+	void Processor::wait(int64_t interval)
 	{
 		m_pCurCoroutine->yield();
-		m_timer->runAfter(time, m_pCurCoroutine);
+		Coroutine *cor = m_pCurCoroutine;
+		auto event_cb = [this, cor]()
+		{
+			this->resume(cor);
+		};
+		TimerEvent::ptr event = std::make_shared<TimerEvent>(interval, false, event_cb);
+		m_timer->addTimerEvent(event);
 		/*
 			切换到主线程，然后将当前协程的上下文保存到当前协程的对象里面
 		*/
@@ -152,19 +178,12 @@ namespace corpc
 
 	void Processor::goCoBatch(std::vector<Coroutine *> &cos)
 	{
+		for (auto pCo : cos)
 		{
-			SpinlockGuard lock(newQueLock_);
-			for (auto pCo : cos)
-			{
-				m_newCoroutines.push(pCo);
-			}
+			m_newCoroutines.push(pCo);
 		}
-		m_epoller->wakeup();
-	}
 
-	Processor *Processor::GetProcessor()
-	{
-		return t_processor_ptr;
+		m_epoller->wakeup();
 	}
 
 	bool Processor::loop()
@@ -175,13 +194,8 @@ namespace corpc
 			LogError("init " << m_tid << " m_epoller failed");
 			return false;
 		}
-		m_timer = std::make_shared<Timer>(m_epoller.get());
-		if (!m_timer->isTimeFdUseful())
-		{
-			LogError("init " << m_tid << " m_timer failed");
-			return false;
-		}
-		m_epoller->setTimerfd(m_timer->getTimeFd());
+		m_timer = std::make_shared<Timer>(this);
+		m_epoller->setTimerfd(m_timer->getFd());
 
 		// 初始化loop
 		m_pLoop = new std::thread(
@@ -196,28 +210,13 @@ namespace corpc
 					{
 						m_actCoroutines.clear();
 					}
-					if (m_timerExpiredCo.size())
-					{
-						m_timerExpiredCo.clear();
-					}
 					// get active tasks
 					m_epoller->getActiveTasks(parameter::epollTimeOutMs, m_actCoroutines);
-
-					// get timeout coroutine
-					m_timer->getExpiredCoroutines(m_timerExpiredCo);
-					size_t timerCoCnt = m_timerExpiredCo.size();
-					// if (timerCoCnt)
-					// 	LogTrace("the num of timeout coroutine : " << timerCoCnt);
-					for (size_t i = 0; i < timerCoCnt; ++i)
-					{
-						resume(m_timerExpiredCo[i]);
-					}
 
 					// 执行新来的协程
 					Coroutine *pNewCo = nullptr;
 					while (m_newCoroutines.pop(pNewCo))
 					{
-
 						m_coSet.insert(pNewCo);
 						resume(pNewCo);
 					}

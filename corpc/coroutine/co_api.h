@@ -5,7 +5,6 @@
 #ifndef CORPC_COROUTINE_CO_API_H
 #define CORPC_COROUTINE_CO_API_H
 #include "scheduler.h"
-#include "mstime.h"
 
 namespace corpc
 {
@@ -19,12 +18,12 @@ namespace corpc
 		corpc会根据处理器个数创建等数量的线程用于运行协程，
 		若有4个处理器，则tid只有0 ~ 3是有效的
 	*/
-	void co_go(std::function<void()> &func, size_t stackSize = parameter::coroutineStackSize, int tid = -1);
+	void co_go(std::function<void()> &func, int tid = -1, size_t stackSize = parameter::coroutineStackSize);
 
-	void co_go(std::function<void()> &&func, size_t stackSize = parameter::coroutineStackSize, int tid = -1);
+	void co_go(std::function<void()> &&func, int tid = -1, size_t stackSize = parameter::coroutineStackSize);
 
 	// 当前协程等待t毫秒后再继续执行
-	void co_sleep(Time t);
+	void co_sleep(int64_t interval);
 
 	// 等待调度器的结束
 	void sche_join();

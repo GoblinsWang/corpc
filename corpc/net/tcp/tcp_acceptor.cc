@@ -9,6 +9,11 @@ namespace corpc
 
     TcpAcceptor::~TcpAcceptor()
     {
+        if (m_listener->getFd() > 0)
+        {
+            corpc::Scheduler::getScheduler()->getProcessor(0)->GetEpoller()->delEvent(m_listener->getFd()); // 0
+            ::close(m_listener->getFd());
+        }
     }
 
     NetSocket::ptr TcpAcceptor::toAccept()

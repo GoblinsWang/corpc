@@ -5,6 +5,7 @@
 #include "../coroutine/processor.h"
 #include "../coroutine/coroutine.h"
 #include "../coroutine/rw_mutex.h"
-#include "../coroutine/co_api.h"
+#include "../coroutine/fd_event.h"
 #include "../coroutine/timer.h"
+#include "../coroutine/co_api.h"
 #endif

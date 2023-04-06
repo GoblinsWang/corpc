@@ -9,8 +9,8 @@
 #include <memory>
 #include <sys/eventfd.h>
 #include "utils.h"
-#include "../log/logger.h"
 #include "coroutine.h"
+#include "../log/logger.h"
 struct epoll_event;
 
 namespace corpc
@@ -30,8 +30,6 @@ namespace corpc
 
 		DISALLOW_COPY_MOVE_AND_ASSIGN(Epoller);
 
-		void setTimerfd(int timer_fd);
-
 		// 修改Epoller中的事件
 		bool modEvent(FdEvent *fd_event, int fd, int op);
 
@@ -48,10 +46,19 @@ namespace corpc
 		// 获取被激活的事件服务
 		void getActiveTasks(int timeOutMs, std::vector<Coroutine *> &activeCors);
 
-		inline bool isEpollFdUseful() { return m_epollFd < 0 ? false : true; };
+	public:
+		inline void setTimerfd(int timer_fd)
+		{
+			m_timer_fd = timer_fd;
+		}
+
+		inline bool isEpollFdUseful()
+		{
+			return m_epollFd < 0 ? false : true;
+		}
 
 	public:
-		std::vector<int> m_fds; // alrady care events
+		std::vector<int> m_fds; // already care events
 
 	private:
 		int m_timer_fd;

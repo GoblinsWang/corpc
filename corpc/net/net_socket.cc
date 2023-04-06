@@ -59,7 +59,7 @@ namespace corpc
 	NetSocket::~NetSocket()
 	{
 		LogTrace("socket over, fd = " << m_fd);
-		::close(m_fd);
+		// ::close(m_fd);
 	}
 
 	int NetSocket::accept()
@@ -76,7 +76,7 @@ namespace corpc
 			int cli_fd = ::accept(m_fd, (struct sockaddr *)&cli_addr, &len);
 			if (cli_fd > 0)
 			{
-				LogTrace("new coming client fd, " << KV(cli_fd));
+				LogInfo("new coming client fd, " << KV(cli_fd));
 				m_peer_addr = std::make_shared<IPAddress>(cli_addr);
 				return cli_fd;
 			}

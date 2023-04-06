@@ -18,7 +18,7 @@
 #include "epoller.h"
 #include "timer.h"
 #include "lock_free_ring_buffer.h"
-#include "../net/fd_event.h"
+#include "fd_event.h"
 #include "../log/logger.h"
 
 namespace corpc
@@ -30,12 +30,6 @@ namespace corpc
 		PRO_RUNNING = 0,
 		PRO_STOPPING,
 		PRO_STOPPED
-	};
-
-	enum newCoAddingStatus
-	{
-		NEWCO_ADDING = 0,
-		NEWCO_ADDED
 	};
 
 	class Processor
@@ -55,12 +49,19 @@ namespace corpc
 
 		void addTask(std::vector<std::function<void()>> task, bool is_wakeup = true);
 
+		Coroutine *getNewCoroutine(std::function<void()> &&func, size_t stackSize = parameter::coroutineStackSize);
+
+		Coroutine *getNewCoroutine(std::function<void()> &func, size_t stackSize = parameter::coroutineStackSize);
+
 		void addCoroutine(corpc::Coroutine *cor, bool is_wakeup = true);
+
+		// 恢复运行指定协程
+		void resume(Coroutine *);
 
 		void yield();
 
 		// 当前协程等待time毫秒
-		void wait(Time time);
+		void wait(int64_t interval);
 
 		// 清除当前正在运行的协程
 		void killCurCo();
@@ -83,10 +84,15 @@ namespace corpc
 		void goCoBatch(std::vector<Coroutine *> &cos);
 
 	public:
-		static Processor *GetProcessor();
+		inline Epoller *GetEpoller()
+		{
+			return m_epoller.get();
+		}
 
-		// 恢复运行指定协程
-		void resume(Coroutine *);
+		inline Timer *GetTimer()
+		{
+			return m_timer.get();
+		}
 
 	private:
 		bool isLoopThread() const;
@@ -110,19 +116,13 @@ namespace corpc
 
 		LockFreeRingBuffer<Coroutine *, 1000> m_newCoroutines;
 
-		Spinlock newQueLock_;
-
+		// 对象池的锁
 		Spinlock m_coPoolLock;
-
-		// std::mutex newCoQueMtx_;
 
 		// EventEpoller发现的活跃事件所放的列表
 		std::vector<Coroutine *> m_actCoroutines;
 
 		std::set<Coroutine *> m_coSet;
-
-		// 定时器任务列表
-		std::vector<Coroutine *> m_timerExpiredCo;
 
 		// 被移除的协程列表，要移除某一个事件会先放在该列表中，一次循环结束才会真正delete
 		std::vector<Coroutine *> m_removedCo;

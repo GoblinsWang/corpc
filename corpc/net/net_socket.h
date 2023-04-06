@@ -60,7 +60,7 @@ namespace corpc
 			return m_peer_addr;
 		}
 
-		inline NetAddress::ptr geLocalAddr()
+		inline NetAddress::ptr getLocalAddr()
 		{
 			return m_local_addr;
 		}

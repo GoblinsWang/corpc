@@ -5,37 +5,41 @@
 #include "co_api.h"
 #include "../log/logger.h"
 
-void corpc::co_go(std::function<void()> &&func, size_t stackSize, int tid)
+void corpc::co_go(std::function<void()> &&func, int tid, size_t stackSize)
 {
-	corpc::Scheduler *Sc = corpc::Scheduler::getScheduler();
-	corpc::Coroutine *cor = Sc->getNewCoroutine(std::move(func), stackSize);
 	if (tid < 0)
 	{
-		Sc->getProcessor()->addCoroutine(cor);
+		corpc::Processor *pro = corpc::Scheduler::getScheduler()->getProcessor();
+		corpc::Coroutine *cor = pro->getNewCoroutine(std::move(func));
+		pro->addCoroutine(cor);
 	}
 	else
 	{
-		Sc->getProcessor(tid)->addCoroutine(cor);
+		corpc::Processor *pro = corpc::Scheduler::getScheduler()->getProcessor(tid); // 指定
+		corpc::Coroutine *cor = pro->getNewCoroutine(std::move(func));
+		pro->addCoroutine(cor);
 	}
 }
 
-void corpc::co_go(std::function<void()> &func, size_t stackSize, int tid)
+void corpc::co_go(std::function<void()> &func, int tid, size_t stackSize)
 {
-	corpc::Scheduler *Sc = corpc::Scheduler::getScheduler();
-	corpc::Coroutine *cor = Sc->getNewCoroutine(func, stackSize);
 	if (tid < 0)
 	{
-		Sc->getProcessor()->addCoroutine(cor);
+		corpc::Processor *pro = corpc::Scheduler::getScheduler()->getProcessor();
+		corpc::Coroutine *cor = pro->getNewCoroutine(func);
+		pro->addCoroutine(cor);
 	}
 	else
 	{
-		Sc->getProcessor(tid)->addCoroutine(cor);
+		corpc::Processor *pro = corpc::Scheduler::getScheduler()->getProcessor(tid); // 指定
+		corpc::Coroutine *cor = pro->getNewCoroutine(func);
+		pro->addCoroutine(cor);
 	}
 }
 
-void corpc::co_sleep(Time time)
+void corpc::co_sleep(int64_t interval)
 {
-	corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->wait(time);
+	corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->wait(interval);
 }
 
 void corpc::sche_join()

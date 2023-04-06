@@ -5,7 +5,8 @@
 #include "epoller.h"
 #include "coroutine.h"
 #include "parameter.h"
-#include "../net/fd_event.h"
+#include "fd_event.h"
+#include "processor.h"
 #include <string.h>
 #include <errno.h>
 #include <sys/epoll.h>
@@ -37,11 +38,6 @@ namespace corpc
 			::close(m_epollFd);
 		}
 	};
-
-	void Epoller::setTimerfd(int timer_fd)
-	{
-		m_timer_fd = timer_fd;
-	}
 
 	// 修改Epoller中的事件
 	bool Epoller::modEvent(FdEvent *fd_event, int fd, int op)
@@ -122,7 +118,7 @@ namespace corpc
 	{
 
 		int actEvNum = ::epoll_wait(m_epollFd, &*m_activeEpollEvents.begin(), static_cast<int>(m_activeEpollEvents.size()), timeOutMs);
-		// LogDebug("epoll_wait back, actEvNum = " << actEvNum);
+		// LogInfo("epoll_wait back, actEvNum = " << actEvNum);
 
 		if (actEvNum < 0)
 		{
@@ -139,11 +135,11 @@ namespace corpc
 				if (fd == m_wake_fd && (one_event.events & READ))
 				{
 					// wakeup
-					LogDebug(" is m_wake_fd, fd=[" << m_wake_fd << "]");
+					LogDebug(" is m_wake_fd, fd = [" << m_wake_fd << "]");
 					char buf[8];
 					while (1)
 					{
-						// LogDebug(" is m_wake_fd, fd=[" << m_wake_fd << "]");
+						// LogDebug(" is m_wake_fd, fd = [" << m_wake_fd << "]");
 						if ((::read(m_wake_fd, buf, 8) == -1) && errno == EAGAIN)
 						{
 							break;
@@ -152,34 +148,27 @@ namespace corpc
 				}
 				else if (fd == m_timer_fd && (one_event.events & READ))
 				{
-					LogDebug(" is m_timer_fd, fd=[" << m_wake_fd << "]");
-					char buf[8];
-					while (1)
-					{
-						// LogDebug(" is m_timer_fd, fd=[" << m_wake_fd << "]");
-						if ((::read(m_timer_fd, buf, 8) == -1) && errno == EAGAIN)
-						{
-							break;
-						}
-					}
+					LogInfo(" is m_timer_fd, fd=[" << m_wake_fd << "]");
+					// TODO：
+					m_processor->GetTimer()->onTimer();
 				}
 				else
 				{
 					LogDebug("not m_wake_fd, fd=[" << fd << "]");
 
-					if ((!(one_event.events & EPOLLIN)) && (!(one_event.events & EPOLLOUT)))
+					if ((!(one_event.events & READ)) && (!(one_event.events & WRITE)))
 					{
 						LogError("socket [" << fd << "] occur other unknow event:[" << one_event.events << "], need unregister this socket");
 						delEvent(fd);
 					}
 					else
 					{
-						if (one_event.events & EPOLLIN)
+						if (one_event.events & READ)
 						{
 							// LogDebug("socket [" << fd << "] occur read event");
 							activeCors.push_back(ptr->getCoroutine());
 						}
-						if (one_event.events & EPOLLOUT)
+						if (one_event.events & WRITE)
 						{
 							// LogDebug("socket [" << fd << "] occur write event");
 							activeCors.push_back(ptr->getCoroutine());

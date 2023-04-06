@@ -5,65 +5,96 @@
 #ifndef CORPC_COROUTINE_TIMER_H
 #define CORPC_COROUTINE_TIMER_H
 
-#include "mstime.h"
-#include "utils.h"
-
 #include <map>
 #include <queue>
 #include <vector>
 #include <mutex>
 #include <memory>
 #include <functional>
-
-#define TIMER_DUMMYBUF_SIZE 1024
+#include "utils.h"
+#include "fd_event.h"
+#include "coroutine"
+#include "rw_mutex.h"
+#include "../log/logger.h"
 
 namespace corpc
 {
-	class Coroutine;
+	int64_t getNowMs();
 
-	class Epoller;
+	class TimerEvent
+	{
+
+	public:
+		using ptr = std::shared_ptr<TimerEvent>;
+		TimerEvent(int64_t interval, bool is_repeated, std::function<void()> task)
+			: m_interval(interval), m_is_repeated(is_repeated), m_task(task)
+		{
+			m_arrive_time = getNowMs() + m_interval;
+			// LogDebug("timeevent will occur at " << m_arrive_time);
+		}
+
+		void resetTime()
+		{
+			// LogDebug("reset tiemrevent, origin arrivetime=" << m_arrive_time);
+			m_arrive_time = getNowMs() + m_interval;
+			// DLogDebug("reset tiemrevent, now arrivetime=" << m_arrive_time);
+			m_is_cancled = false;
+		}
+
+		void wake()
+		{
+			m_is_cancled = false;
+		}
+
+		void cancle()
+		{
+			m_is_cancled = true;
+		}
+
+		void cancleRepeated()
+		{
+			m_is_repeated = false;
+		}
+
+	public:
+		int64_t m_arrive_time; // when to excute task, ms
+		int64_t m_interval;	   // interval between two tasks, ms
+		bool m_is_repeated{false};
+		bool m_is_cancled{false};
+		// Coroutine *m_coroutine{nullptr};
+		std::function<void()> m_task;
+	};
+
+	class Processor;
 
 	// 定时器
-	class Timer
+	class Timer : public corpc::FdEvent
 	{
 	public:
 		using ptr = std::shared_ptr<Timer>;
 
-		using TimerHeap = std::priority_queue<std::pair<Time, Coroutine *>, std::vector<std::pair<Time, Coroutine *>>, std::greater<std::pair<Time, Coroutine *>>>;
-
-		Timer(Epoller *);
+		Timer(Processor *processor);
 
 		~Timer();
 
 		DISALLOW_COPY_MOVE_AND_ASSIGN(Timer);
 
-		int getTimeFd();
+		void addTimerEvent(TimerEvent::ptr event, bool need_reset = true);
 
-		// 获取所有已经超时的需要执行的函数
-		void getExpiredCoroutines(std::vector<Coroutine *> &expiredCoroutines);
+		void delTimerEvent(TimerEvent::ptr event);
 
-		// 在time时刻需要恢复协程co
-		void runAt(Time time, Coroutine *pCo);
+		// 执行定时器的任务
+		void onTimer();
 
-		// 经过time毫秒恢复协程co
-		void runAfter(Time time, Coroutine *pCo);
-
-		void wakeUp();
-
-		// 给timefd重新设置时间，time是绝对时间
-		bool resetTimeOfTimefd(Time time);
-
-		inline bool isTimeFdUseful() { return m_timeFd < 0 ? false : true; };
+		void resetArriveTime();
 
 	private:
-		int m_timeFd;
+		Processor *m_processor = nullptr;
 
-		// 用于read timefd上数据的
-		char dummyBuf_[TIMER_DUMMYBUF_SIZE];
+		RWMutex m_rwmutex;
 
-		// 定时器协程集合
-		// std::multimap<Time, Coroutine*> timerCoMap_;
-		TimerHeap m_timerCoHeap;
+		// 定时器事件集合
+		std::multimap<int64_t, TimerEvent::ptr> m_pending_events;
 	};
 
 }

@@ -12,7 +12,7 @@
 #include "../corpc/log/logger.h"
 using namespace corpc;
 
-const char *html = "<html><body><h1>Welcome to coRPC, just enjoy it!</h1><p>%s</p></body></html>";
+const char *html = "<html><body><h1>Welcome to corpc, just enjoy it!</h1><p>%s</p></body></html>";
 
 class QPSHttpServlet : public corpc::HttpServlet
 {

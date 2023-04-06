@@ -54,27 +54,6 @@ Scheduler *Scheduler::getScheduler()
 	return m_pScheduler;
 }
 
-Coroutine *Scheduler::getNewCoroutine(std::function<void()> &&coFunc, size_t stackSize)
-{
-	Coroutine *pCo = nullptr;
-
-	{
-		SpinlockGuard lock(m_coPoolLock);
-		pCo = m_copool.new_obj(std::move(coFunc), stackSize);
-	}
-	return pCo;
-}
-Coroutine *Scheduler::getNewCoroutine(std::function<void()> &coFunc, size_t stackSize)
-{
-	Coroutine *pCo = nullptr;
-
-	{
-		SpinlockGuard lock(m_coPoolLock);
-		pCo = m_copool.new_obj(coFunc, stackSize);
-	}
-	return pCo;
-}
-
 void Scheduler::join()
 {
 	for (auto pP : m_processors)

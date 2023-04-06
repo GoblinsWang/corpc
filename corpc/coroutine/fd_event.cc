@@ -1,5 +1,3 @@
-#include <fcntl.h>
-#include <unistd.h>
 #include "fd_event.h"
 
 namespace corpc
@@ -12,31 +10,6 @@ namespace corpc
     }
 
     FdEvent::~FdEvent() {}
-
-    void FdEvent::setSocket(NetSocket::ptr sock)
-    {
-        m_socket = sock;
-    }
-
-    int FdEvent::getFd() const
-    {
-        return m_fd;
-    }
-
-    void FdEvent::setCoroutine(Coroutine *cor)
-    {
-        m_coroutine = cor;
-    }
-
-    void FdEvent::clearCoroutine()
-    {
-        m_coroutine = nullptr;
-    }
-
-    Coroutine *FdEvent::getCoroutine()
-    {
-        return m_coroutine;
-    }
 
     FdEvent::ptr FdEventContainer::getFdEvent(int fd)
     {

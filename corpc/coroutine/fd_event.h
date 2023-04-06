@@ -1,5 +1,5 @@
-#ifndef CORPC_NET_FD_EVNET_H
-#define CORPC_NET_FD_EVNET_H
+#ifndef CORPC_COROUTINE_FD_EVNET_H
+#define CORPC_COROUTINE_FD_EVNET_H
 
 #include <functional>
 #include <memory>
@@ -7,16 +7,12 @@
 #include <sys/epoll.h>
 #include <assert.h>
 #include <mutex>
-#include "net_socket.h"
+#include "coroutine.h"
+#include "rw_mutex.h"
 #include "../log/logger.h"
-#include "../coroutine/coroutine.h"
-#include "../coroutine/rw_mutex.h"
 
 namespace corpc
 {
-
-    class Processor;
-
     enum IOEvent
     {
         READ = EPOLLIN,
@@ -29,29 +25,33 @@ namespace corpc
     public:
         using ptr = std::shared_ptr<FdEvent>;
 
-        explicit FdEvent(int fd);
+        FdEvent(int fd);
 
         virtual ~FdEvent();
 
-        void setSocket(NetSocket::ptr Sock);
-
-        int getFd() const;
-
-        void setProcessor(Processor *r);
-
-        void setCoroutine(Coroutine *cor);
-
-        Coroutine *getCoroutine();
-
-        void clearCoroutine();
-
     public:
-        std::mutex m_mutex;
+        inline int getFd()
+        {
+            return m_fd;
+        }
+
+        inline void setCoroutine(Coroutine *cor)
+        {
+            m_coroutine = cor;
+        }
+
+        inline Coroutine *getCoroutine()
+        {
+            return m_coroutine;
+        }
+
+        inline void clearCoroutine()
+        {
+            m_coroutine = nullptr;
+        }
 
     protected:
         int m_fd{-1};
-
-        NetSocket::ptr m_socket = nullptr;
 
         Coroutine *m_coroutine{nullptr};
     };

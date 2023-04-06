@@ -22,7 +22,7 @@ void RWMutex::rlock()
 
         waitingCo_.push(Scheduler::getScheduler()->getProcessor(threadIdx)->getCurRunningCo());
     }
-
+    LogInfo("in rlock, yield to wait RWMutex");
     Scheduler::getScheduler()->getProcessor(threadIdx)->yield();
     rlock();
 }
@@ -47,7 +47,7 @@ void RWMutex::wlock()
             state_ = MU_WRITING;
             return;
         }
-
+        LogInfo("in wlock, yield to wait RWMutex");
         waitingCo_.push(Scheduler::getScheduler()->getProcessor(threadIdx)->getCurRunningCo());
     }
 
@@ -68,6 +68,7 @@ void RWMutex::freeLock()
     {
         auto wakeCo = waitingCo_.front();
         waitingCo_.pop();
+        LogInfo("in freeLock, go to wake RWMutex");
         wakeCo->getMyProcessor()->goCo(wakeCo);
     }
 }

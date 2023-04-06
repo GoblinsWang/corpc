@@ -29,13 +29,10 @@ namespace corpc
             // m_protocal_type = TinyPb_Protocal;
         }
 
-        // m_main_reactor = tinyrpc::Reactor::GetReactor();
-        // m_main_reactor->setReactorType(MainReactor);
+        // m_time_wheel = std::make_shared<TcpTimeWheel>();
 
-        // m_time_wheel = std::make_shared<TcpTimeWheel>(m_main_reactor, gRpcConfig->m_timewheel_bucket_num, gRpcConfig->m_timewheel_inteval);
-
-        // m_clear_clent_timer_event = std::make_shared<TimerEvent>(10000, true, std::bind(&TcpServer::ClearClientTimerFunc, this));
-        // m_main_reactor->getTimer()->addTimerEvent(m_clear_clent_timer_event);
+        m_clear_clent_timer_event = std::make_shared<TimerEvent>(10000, true, std::bind(&TcpServer::ClearClientTimerFunc, this));
+        corpc::Scheduler::getScheduler()->getProcessor(0)->GetTimer()->addTimerEvent(m_clear_clent_timer_event); // 0
 
         LogInfo("TcpServer setup on [" << m_addr->toString() << "]");
     }
@@ -44,7 +41,7 @@ namespace corpc
     {
         // init a acceptor
         m_acceptor.reset(new TcpAcceptor(m_addr));
-        corpc::co_go(std::bind(&TcpServer::MainAcceptCorFunc, this));
+        corpc::co_go(std::bind(&TcpServer::MainAcceptCorFunc, this), 0); // 0号协程处理实例
     }
 
     TcpServer::~TcpServer()
@@ -78,13 +75,13 @@ namespace corpc
         {
             it->second.reset();
             // set new Tcpconnection
-            LogDebug("fd " << net_sock->getFd() << "have exist, reset it");
+            LogInfo("fd " << net_sock->getFd() << "have exist, reset it");
             it->second = std::make_shared<TcpConnection>(this, net_sock, 128);
             return it->second;
         }
         else
         {
-            LogDebug("fd " << net_sock->getFd() << ", did't exist, new it");
+            LogInfo("fd " << net_sock->getFd() << ", did't exist, new it");
             TcpConnection::ptr conn = std::make_shared<TcpConnection>(this, net_sock, 128);
             m_clients.insert(std::make_pair(net_sock->getFd(), conn));
             return conn;
@@ -135,41 +132,31 @@ namespace corpc
         return true;
     }
 
-    // void TcpServer::freshTcpConnection(TcpTimeWheel::TcpConnectionSlot::ptr slot)
-    // {
-    //     auto cb = [slot, this]() mutable
-    //     {
-    //         this->getTimeWheel()->fresh(slot);
-    //         slot.reset();
-    //     };
-    //     m_main_reactor->addTask(cb);
-    // }
+    void TcpServer::freshTcpConnection(TcpTimeWheel::TcpConnectionSlot::ptr slot)
+    {
+        auto cofunc = [slot, this]() mutable
+        {
+            this->getTimeWheel()->fresh(slot);
+            slot.reset();
+        };
+        corpc::co_go(cofunc, 0);
+    }
 
-    // void TcpServer::ClearClientTimerFunc()
-    // {
-    //     // DebugLog << "this IOThread loop timer excute";
-
-    //     // delete Closed TcpConnection per loop
-    //     // for free memory
-    //     // DebugLog << "m_clients.size=" << m_clients.size();
-    //     for (auto &i : m_clients)
-    //     {
-    //         // TcpConnection::ptr s_conn = i.second;
-    //         // DebugLog << "state = " << s_conn->getState();
-    //         if (i.second && i.second.use_count() > 0 && i.second->getState() == Closed)
-    //         {
-    //             // need to delete TcpConnection
-    //             DebugLog << "TcpConection [fd:" << i.first << "] will delete, state=" << i.second->getState();
-    //             (i.second).reset();
-    //             // s_conn.reset();
-    //         }
-    //     }
-    // }
-
-    // TcpTimeWheel::ptr TcpServer::getTimeWheel()
-    // {
-    //     return m_time_wheel;
-    // }
+    void TcpServer::ClearClientTimerFunc()
+    {
+        // delete Closed TcpConnection per loop
+        // for free memory
+        // LogDebug("m_clients.size=" << m_clients.size());
+        for (auto &i : m_clients)
+        {
+            if (i.second && i.second.use_count() > 0 && i.second->getState() == Closed)
+            {
+                // need to delete TcpConnection
+                LogDebug("TcpConection [fd:" << i.first << "] will delete, state = " << i.second->getState());
+                (i.second).reset();
+            }
+        }
+    }
 
     AbstractDispatcher::ptr TcpServer::getDispatcher()
     {
@@ -179,6 +166,11 @@ namespace corpc
     AbstractCodeC::ptr TcpServer::getCodec()
     {
         return m_codec;
+    }
+
+    TcpTimeWheel::ptr TcpServer::getTimeWheel()
+    {
+        return m_time_wheel;
     }
 
 }

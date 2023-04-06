@@ -64,7 +64,7 @@ namespace corpc
         // bool is_parse_succ = false;
         int read_size = 0;
         std::string tmp(strs);
-        LogDebug("pending to parse str:" << tmp << ", total size =" << tmp.size());
+        // LogDebug("pending to parse str:" << tmp << ", total size =" << tmp.size());
         int len = tmp.length();
         while (1)
         {
@@ -73,12 +73,12 @@ namespace corpc
                 size_t i = tmp.find(g_CRLF);
                 if (i == tmp.npos)
                 {
-                    LogDebug("not found CRLF in buffer");
+                    LogError("not found CRLF in buffer");
                     return;
                 }
                 if (i == tmp.length() - 2)
                 {
-                    LogDebug("need to read more data");
+                    LogError("need to read more data");
                     break;
                 }
                 is_parse_request_line = parseHttpRequestLine(request, tmp.substr(0, i));
@@ -96,13 +96,10 @@ namespace corpc
                 size_t j = tmp.find(g_CRLF_DOUBLE);
                 if (j == tmp.npos)
                 {
-                    LogDebug("not found CRLF CRLF in buffer");
+                    LogError("not found CRLF CRLF in buffer");
                     return;
                 }
-                // if (j == tmp.length() - 4) {
-                //   LogDebug("need to read more data");
-                //   goto parse_error;
-                // }
+
                 is_parse_request_header = parseHttpRequestHeader(request, tmp.substr(0, j));
                 if (!is_parse_request_header)
                 {
@@ -114,6 +111,7 @@ namespace corpc
             }
             if (!is_parse_request_content)
             {
+                // 依据头部字段数据来读
                 int content_len = std::atoi(request->m_requeset_header.m_maps["Content-Length"].c_str());
                 if ((int)strs.length() - read_size < content_len)
                 {
@@ -194,7 +192,7 @@ namespace corpc
         int l = 0;
         if (j == url.npos)
         {
-            LogDebug("url only have path, url is" << url);
+            LogDebug("url only have path, url is " << url);
         }
         else
         {

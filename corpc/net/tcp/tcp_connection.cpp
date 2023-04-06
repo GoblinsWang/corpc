@@ -31,7 +31,7 @@ namespace corpc
     //     m_fd_event->setReactor(m_reactor);
     //     initBuffer(buff_size);
 
-    //     LogDebug("succ create tcp connection[NotConnected]";
+    //     LogDebug("succ create tcp connection[NotConnected]");
     // }
 
     void TcpConnection::initServer()
@@ -40,25 +40,25 @@ namespace corpc
         corpc::co_go(std::bind(&TcpConnection::MainServerLoopCorFunc, this));
     }
 
-    // void TcpConnection::registerToTimeWheel()
-    // {
-    //     auto cb = [](TcpConnection::ptr conn)
-    //     {
-    //         conn->shutdownConnection();
-    //     };
-    //     TcpTimeWheel::TcpConnectionSlot::ptr tmp = std::make_shared<AbstractSlot<TcpConnection>>(shared_from_this(), cb);
-    //     m_weak_slot = tmp;
-    //     m_tcp_svr->freshTcpConnection(tmp);
-    // }
+    void TcpConnection::registerToTimeWheel()
+    {
+        auto cb = [](TcpConnection::ptr conn)
+        {
+            conn->shutdownConnection();
+        };
+        TcpTimeWheel::TcpConnectionSlot::ptr tmp = std::make_shared<AbstractSlot<TcpConnection>>(shared_from_this(), cb);
+        m_weak_slot = tmp;
+        m_tcp_svr->freshTcpConnection(tmp);
+    }
 
     void TcpConnection::setUpClient()
     {
-        // setState(Connected);
+        setState(Connected);
     }
 
     TcpConnection::~TcpConnection()
     {
-        LogDebug("~TcpConnection, fd=" << m_netsock->getFd());
+        LogDebug("~TcpConnection, fd = " << m_netsock->getFd());
     }
 
     void TcpConnection::initBuffer(int size)
@@ -80,7 +80,7 @@ namespace corpc
             output();
         }
         // TODO: clear this conn is a task of tcp_server
-        LogInfo("this connection has already end loop");
+        // LogInfo("this connection has already end loop");
     }
 
     void TcpConnection::input()
@@ -116,7 +116,7 @@ namespace corpc
             {
                 m_read_buffer->recycleWrite(rt);
             }
-            LogDebug("m_read_buffer size = " << m_read_buffer->getBufferVector().size() << ", rd=" << m_read_buffer->readIndex() << ", wd=" << m_read_buffer->writeIndex());
+            LogDebug("m_read_buffer size = " << m_read_buffer->getBufferVector().size() << ", rd = " << m_read_buffer->readIndex() << ", wd = " << m_read_buffer->writeIndex());
 
             LogDebug("read data back, fd = " << m_netsock->getFd());
             count += rt;
@@ -168,7 +168,7 @@ namespace corpc
             LogError("not read all data in socket buffer");
         }
 
-        LogInfo("recv [" << count << "] bytes data from [" << m_netsock->geLocalAddr()->toString() << "], fd [" << m_netsock->getFd() << "]");
+        LogInfo("recv [" << count << "] bytes data from [" << m_netsock->getLocalAddr()->toString() << "], fd [" << m_netsock->getFd() << "]");
 
         // if (m_connection_type == ServerConnection)
         // {
@@ -201,6 +201,7 @@ namespace corpc
 
             if (!data->decode_succ)
             {
+                // TODO: how to solve error http?
                 LogError("it parse request error of fd " << m_netsock->getFd());
                 break;
             }
@@ -252,14 +253,7 @@ namespace corpc
             LogDebug("succ write " << rt << " bytes");
             m_write_buffer->recycleRead(rt);
             LogDebug("recycle write index =" << m_write_buffer->writeIndex() << ", read_index =" << m_write_buffer->readIndex() << "readable = " << m_write_buffer->readAble());
-            LogInfo("send[" << rt << "] bytes data to [" << m_netsock->geLocalAddr()->toString() << "], fd [" << m_netsock->getFd() << "]");
-            if (m_write_buffer->readAble() <= 0)
-            {
-                // InfoLog << "send all data, now unregister write event on reactor and yield Coroutine";
-                LogInfo("send all data, now unregister write event and break");
-                // m_fd_event->delListenEvents(IOEvent::WRITE);
-                break;
-            }
+            LogInfo("send[" << rt << "] bytes data to [" << m_netsock->getLocalAddr()->toString() << "], fd [" << m_netsock->getFd() << "]");
 
             if (m_is_over_time)
             {
@@ -279,27 +273,27 @@ namespace corpc
         // stop read and write cor
         m_stop = true;
 
-        // close(m_fd_event->getFd());
+        ::close(m_fd_event->getFd());
         setState(Closed);
     }
 
-    // void TcpConnection::shutdownConnection()
-    // {
-    //     TcpConnectionState state = getState();
-    //     if (state == Closed || state == NotConnected)
-    //     {
-    //         LogDebug("this client has closed";
-    //         return;
-    //     }
-    //     setState(HalfClosing);
-    //     InfoLog << "shutdown conn[" << m_peer_addr->toString() << "], fd=" << m_fd;
-    //     // call sys shutdown to send FIN
-    //     // wait client done something, client will send FIN
-    //     // and fd occur read event but byte count is 0
-    //     // then will call clearClient to set CLOSED
-    //     // IOThread::MainLoopTimerFunc will delete CLOSED connection
-    //     shutdown(m_fd_event->getFd(), SHUT_RDWR);
-    // }
+    void TcpConnection::shutdownConnection()
+    {
+        TcpConnectionState state = getState();
+        if (state == Closed || state == NotConnected)
+        {
+            LogDebug("this client has closed");
+            return;
+        }
+        setState(HalfClosing);
+        LogInfo("shutdown conn[" << m_netsock->getLocalAddr()->toString() << "], fd=" << m_netsock->getFd());
+        // call sys shutdown to send FIN
+        // wait client done something, client will send FIN
+        // and fd occur read event but byte count is 0
+        // then will call clearClient to set CLOSED
+        // IOThread::MainLoopTimerFunc will delete CLOSED connection
+        shutdown(m_fd_event->getFd(), SHUT_RDWR);
+    }
 
     TcpBuffer *TcpConnection::getInBuffer()
     {
@@ -333,7 +327,7 @@ namespace corpc
     TcpConnectionState TcpConnection::getState()
     {
         TcpConnectionState state;
-        m_rwmutex.rlock();
+        m_rwmutex.rlock(); // 读锁
         state = m_state;
         m_rwmutex.runlock();
 

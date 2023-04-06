@@ -26,10 +26,6 @@ namespace corpc
 
 		static Scheduler *getScheduler();
 
-		Coroutine *getNewCoroutine(std::function<void()> &&func, size_t stackSize = parameter::coroutineStackSize);
-
-		Coroutine *getNewCoroutine(std::function<void()> &func, size_t stackSize = parameter::coroutineStackSize);
-
 		// 指定实例
 		Processor *getProcessor(int id);
 
@@ -53,12 +49,6 @@ namespace corpc
 		std::vector<Processor *> m_processors;
 
 		ProcessorSelector m_proSelector;
-
-	private:
-		Spinlock m_coPoolLock;
-
-		// 对象池
-		ObjPool<Coroutine> m_copool;
 	};
 
 }
