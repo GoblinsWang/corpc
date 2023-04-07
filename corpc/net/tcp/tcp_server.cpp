@@ -29,7 +29,7 @@ namespace corpc
             // m_protocal_type = TinyPb_Protocal;
         }
 
-        // m_time_wheel = std::make_shared<TcpTimeWheel>();
+        m_time_wheel = std::make_shared<TcpTimeWheel>(10, 6); // 时间轮->10个slot，6秒间隔
 
         m_clear_clent_timer_event = std::make_shared<TimerEvent>(10000, true, std::bind(&TcpServer::ClearClientTimerFunc, this));
         corpc::Scheduler::getScheduler()->getProcessor(0)->GetTimer()->addTimerEvent(m_clear_clent_timer_event); // 0
@@ -139,6 +139,7 @@ namespace corpc
             this->getTimeWheel()->fresh(slot);
             slot.reset();
         };
+        // 0, avoid crush between some thread
         corpc::co_go(cofunc, 0);
     }
 
@@ -152,7 +153,7 @@ namespace corpc
             if (i.second && i.second.use_count() > 0 && i.second->getState() == Closed)
             {
                 // need to delete TcpConnection
-                LogDebug("TcpConection [fd:" << i.first << "] will delete, state = " << i.second->getState());
+                // LogError("TcpConection [fd:" << i.first << "] will delete, state = " << i.second->getState());
                 (i.second).reset();
             }
         }

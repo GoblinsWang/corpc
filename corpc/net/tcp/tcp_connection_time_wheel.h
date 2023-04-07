@@ -3,13 +3,14 @@
 
 #include <queue>
 #include <vector>
+#include <set>
+#include <unordered_map>
+#include "tcp_connection.h"
 #include "abstract_slot.h"
 #include "../common.h"
 
 namespace corpc
 {
-
-    class TcpConnection;
 
     class TcpTimeWheel
     {
@@ -19,20 +20,35 @@ namespace corpc
 
         typedef AbstractSlot<TcpConnection> TcpConnectionSlot;
 
-        TcpTimeWheel(int bucket_count = 2, int invetal = 5);
+        TcpTimeWheel(int bucket_count = 10, int interval = 6);
 
         ~TcpTimeWheel();
 
         void fresh(TcpConnectionSlot::ptr slot);
 
+        // // void addConnection(int fd, TcpConnection::weakptr slot);
+        // void addConnection(int fd);
+
+        // // void updateConnection(int fd, TcpConnection::weakptr slot);
+        // void updateConnection(int fd);
+
         void loopFunc();
+
+    public:
+        inline int64_t getInterval()
+        {
+            return m_inteval * 1000;
+        }
 
     private:
         int m_bucket_count{0};
         int m_inteval{0}; // second
 
+        int m_cur_bucket{0}; // for loopFunc
+
         TimerEvent::ptr m_event;
-        std::queue<std::vector<TcpConnectionSlot::ptr>> m_wheel;
+
+        std::vector<std::vector<TcpConnectionSlot::ptr>> m_wheel;
     };
 
 }

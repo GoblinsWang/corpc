@@ -8,14 +8,14 @@ namespace corpc
 {
 
     TcpConnection::TcpConnection(corpc::TcpServer *tcp_svr, NetSocket::ptr net_sock, int buff_size)
-        : m_tcp_svr(tcp_svr), m_netsock(net_sock), m_state(Connected), m_connection_type(ServerConnection)
+        : m_tcp_svr(tcp_svr), m_fd(net_sock->getFd()), m_netsock(net_sock), m_state(Connected), m_connection_type(ServerConnection)
     {
 
         m_codec = m_tcp_svr->getCodec();
-        m_fd_event = FdEventContainer::GetFdContainer()->getFdEvent(m_netsock->getFd());
+        m_fd_event = FdEventContainer::GetFdContainer()->getFdEvent(m_fd);
         initBuffer(buff_size);
 
-        LogDebug("succ create tcp connection[" << m_state << "], fd=" << m_netsock->getFd());
+        LogDebug("succ create tcp connection[" << m_state << "], fd=" << m_fd);
     }
 
     // TcpConnection::TcpConnection(corpc::TcpClient *tcp_cli, corpc::Reactor *reactor, int fd, int buff_size, NetAddress::ptr peer_addr)
@@ -36,7 +36,7 @@ namespace corpc
 
     void TcpConnection::initServer()
     {
-        // registerToTimeWheel();
+        registerToTimeWheel();
         corpc::co_go(std::bind(&TcpConnection::MainServerLoopCorFunc, this));
     }
 
@@ -58,7 +58,7 @@ namespace corpc
 
     TcpConnection::~TcpConnection()
     {
-        LogDebug("~TcpConnection, fd = " << m_netsock->getFd());
+        // LogError("~TcpConnection, fd = " << m_netsock->getFd());
     }
 
     void TcpConnection::initBuffer(int size)
@@ -80,7 +80,7 @@ namespace corpc
             output();
         }
         // TODO: clear this conn is a task of tcp_server
-        // LogInfo("this connection has already end loop");
+        // LogError("this connection has already end loop");
     }
 
     void TcpConnection::input()
@@ -128,7 +128,7 @@ namespace corpc
             if (rt <= 0)
             {
                 LogDebug("rt <= 0");
-                LogError("read empty while occur read event, because of peer close, fd= " << m_netsock->getFd() << ", sys error=" << strerror(errno) << ", now to clear tcp connection");
+                LogDebug("read empty while occur read event, because of peer close, fd= " << m_netsock->getFd() << ", sys error=" << strerror(errno) << ", now to clear tcp connection");
                 // this cor can destroy
                 close_flag = true;
                 break;
@@ -170,14 +170,20 @@ namespace corpc
 
         LogInfo("recv [" << count << "] bytes data from [" << m_netsock->getLocalAddr()->toString() << "], fd [" << m_netsock->getFd() << "]");
 
-        // if (m_connection_type == ServerConnection)
-        // {
-        //     TcpTimeWheel::TcpConnectionSlot::ptr tmp = m_weak_slot.lock();
-        //     if (tmp)
-        //     {
-        //         m_tcp_svr->freshTcpConnection(tmp);
-        //     }
-        // }
+        if (m_connection_type == ServerConnection)
+        {
+            int64_t now = getNowMs();
+            // 超过时间轮间隔，才fresh
+            if (now - getLastActiveTime() >= m_tcp_svr->getTimeWheel()->getInterval())
+            {
+                TcpTimeWheel::TcpConnectionSlot::ptr tmp = m_weak_slot.lock();
+                if (tmp)
+                {
+                    m_tcp_svr->freshTcpConnection(tmp);
+                }
+            }
+            updateLastActiveTime();
+        }
     }
 
     void TcpConnection::execute()
@@ -286,7 +292,7 @@ namespace corpc
             return;
         }
         setState(HalfClosing);
-        LogInfo("shutdown conn[" << m_netsock->getLocalAddr()->toString() << "], fd=" << m_netsock->getFd());
+        LogError("shutdown conn[" << m_netsock->getLocalAddr()->toString() << "], fd=" << m_netsock->getFd());
         // call sys shutdown to send FIN
         // wait client done something, client will send FIN
         // and fd occur read event but byte count is 0

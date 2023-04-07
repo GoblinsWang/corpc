@@ -6,7 +6,7 @@
 #include <queue>
 
 #include "tcp_buffer.h"
-#include "tcp_connection_time_wheel.h"
+#include "abstract_slot.h"
 #include "../common.h"
 #include "../net_address.h"
 #include "../abstract_codec.h"
@@ -32,6 +32,8 @@ namespace corpc
 
     public:
         using ptr = std::shared_ptr<TcpConnection>;
+
+        using weakptr = std::weak_ptr<TcpConnection>;
 
         TcpConnection(corpc::TcpServer *tcp_svr, NetSocket::ptr net_sock, int buff_size);
 
@@ -83,6 +85,16 @@ namespace corpc
 
         void initServer();
 
+        inline int64_t getLastActiveTime() const
+        {
+            return m_last_active_time;
+        };
+
+        inline void updateLastActiveTime()
+        {
+            m_last_active_time = getNowMs();
+        }
+
     private:
         void clearClient();
 
@@ -92,11 +104,11 @@ namespace corpc
 
         // Processor *m_processor{nullptr};
 
+        int m_fd;
+
         NetSocket::ptr m_netsock;
         TcpConnectionState m_state{TcpConnectionState::Connected};
         ConnectionType m_connection_type{ServerConnection};
-
-        NetAddress::ptr m_peer_addr;
 
         TcpBuffer::ptr m_read_buffer;
         TcpBuffer::ptr m_write_buffer;
@@ -110,6 +122,8 @@ namespace corpc
         bool m_stop{false};
 
         bool m_is_over_time{false};
+
+        int64_t m_last_active_time;
 
         // std::map<std::string, std::shared_ptr<TinyPbStruct>> m_reply_datas;
 

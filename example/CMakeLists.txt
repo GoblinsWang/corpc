@@ -6,8 +6,8 @@ project(
     LANGUAGES C CXX        
 )
 
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -g -Wall -fPIC -pipe -std=gnu90")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -fPIC -pipe -std=c++11 -fno-exceptions")
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -g  -Wall -fPIC -pipe -std=gnu90")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g  -Wall -fPIC -pipe -std=c++11 -fno-exceptions")
 
 # 包含头文件所在的目录
 include_directories(${PROJECT_SOURCE_DIR})
