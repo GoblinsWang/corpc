@@ -148,13 +148,13 @@ namespace corpc
 				}
 				else if (fd == m_timer_fd && (one_event.events & READ))
 				{
-					LogInfo(" is m_timer_fd, fd=[" << m_wake_fd << "]");
+					// LogDebug(" is m_timer_fd, fd=[" << m_wake_fd << "]");
 					// TODO：
-					m_processor->GetTimer()->onTimer();
+					m_processor->getTimer()->onTimer();
 				}
 				else
 				{
-					LogDebug("not m_wake_fd, fd=[" << fd << "]");
+					// LogDebug("not m_wake_fd, fd=[" << fd << "]");
 
 					if ((!(one_event.events & READ)) && (!(one_event.events & WRITE)))
 					{

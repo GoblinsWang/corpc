@@ -3,6 +3,7 @@
 #include <sys/socket.h>
 #include "tcp_connection.h"
 #include "tcp_server.h"
+#include "tcp_client.h"
 
 namespace corpc
 {
@@ -15,24 +16,19 @@ namespace corpc
         m_fd_event = FdEventContainer::GetFdContainer()->getFdEvent(m_fd);
         initBuffer(buff_size);
 
-        LogDebug("succ create tcp connection[" << m_state << "], fd=" << m_fd);
+        LogDebug("succ create tcp connection[" << m_state << "], fd = " << m_fd);
     }
 
-    // TcpConnection::TcpConnection(corpc::TcpClient *tcp_cli, corpc::Reactor *reactor, int fd, int buff_size, NetAddress::ptr peer_addr)
-    //     : m_fd(fd), m_state(NotConnected), m_connection_type(ClientConnection), m_peer_addr(peer_addr)
-    // {
-    //     m_reactor = reactor;
+    TcpConnection::TcpConnection(corpc::TcpClient *tcp_cli, int fd, int buff_size, NetAddress::ptr peer_addr)
+        : m_tcp_cli(tcp_cli), m_fd(fd), m_state(NotConnected), m_connection_type(ClientConnection)
+    {
+        m_netsock = std::make_shared<NetSocket>(fd, peer_addr);
+        m_codec = m_tcp_cli->getCodeC();
+        m_fd_event = FdEventContainer::GetFdContainer()->getFdEvent(fd);
+        initBuffer(buff_size);
 
-    //     m_tcp_cli = tcp_cli;
-
-    //     m_codec = m_tcp_cli->getCodeC();
-
-    //     m_fd_event = FdEventContainer::GetFdContainer()->getFdEvent(fd);
-    //     m_fd_event->setReactor(m_reactor);
-    //     initBuffer(buff_size);
-
-    //     LogDebug("succ create tcp connection[NotConnected]");
-    // }
+        LogDebug("succ create tcp connection[NotConnected]");
+    }
 
     void TcpConnection::initServer()
     {
@@ -83,6 +79,11 @@ namespace corpc
         // LogError("this connection has already end loop");
     }
 
+    int TcpConnection::toConnect()
+    {
+        return m_netsock->connect();
+    }
+
     void TcpConnection::input()
     {
         if (m_is_over_time)
@@ -128,7 +129,7 @@ namespace corpc
             if (rt <= 0)
             {
                 LogDebug("rt <= 0");
-                LogDebug("read empty while occur read event, because of peer close, fd= " << m_netsock->getFd() << ", sys error=" << strerror(errno) << ", now to clear tcp connection");
+                LogDebug("read empty while occur read event, because of peer close, fd = " << m_netsock->getFd());
                 // this cor can destroy
                 close_flag = true;
                 break;
@@ -168,7 +169,7 @@ namespace corpc
             LogError("not read all data in socket buffer");
         }
 
-        LogInfo("recv [" << count << "] bytes data from [" << m_netsock->getLocalAddr()->toString() << "], fd [" << m_netsock->getFd() << "]");
+        LogInfo("recv [" << count << "] bytes data from [" << m_netsock->getPeerAddr()->toString() << "], fd [" << m_netsock->getFd() << "]");
 
         if (m_connection_type == ServerConnection)
         {
@@ -194,9 +195,9 @@ namespace corpc
         while (m_read_buffer->readAble() > 0)
         {
             std::shared_ptr<AbstractData> data;
-            if (m_codec->getProtocalType() == TinyPb_Protocal)
+            if (m_codec->getProtocalType() == Pb_Protocal)
             {
-                // data = std::make_shared<TinyPbStruct>();
+                data = std::make_shared<PbStruct>();
             }
             else
             {
@@ -218,15 +219,15 @@ namespace corpc
                 m_tcp_svr->getDispatcher()->dispatch(data.get(), this);
                 LogDebug("contine parse next package");
             }
-            // else if (m_connection_type == ClientConnection)
-            // {
-            //     // TODO:
-            //     std::shared_ptr<TinyPbStruct> tmp = std::dynamic_pointer_cast<TinyPbStruct>(data);
-            //     if (tmp)
-            //     {
-            //         m_reply_datas.insert(std::make_pair(tmp->msg_req, tmp));
-            //     }
-            // }
+            else if (m_connection_type == ClientConnection)
+            {
+                // TODO:
+                std::shared_ptr<PbStruct> tmp = std::dynamic_pointer_cast<PbStruct>(data);
+                if (tmp)
+                {
+                    m_reply_datas.insert(std::make_pair(tmp->msg_req, tmp));
+                }
+            }
         }
     }
 
@@ -259,7 +260,7 @@ namespace corpc
             LogDebug("succ write " << rt << " bytes");
             m_write_buffer->recycleRead(rt);
             LogDebug("recycle write index =" << m_write_buffer->writeIndex() << ", read_index =" << m_write_buffer->readIndex() << "readable = " << m_write_buffer->readAble());
-            LogInfo("send[" << rt << "] bytes data to [" << m_netsock->getLocalAddr()->toString() << "], fd [" << m_netsock->getFd() << "]");
+            LogInfo("send[" << rt << "] bytes data to [" << m_netsock->getPeerAddr()->toString() << "], fd [" << m_netsock->getFd() << "]");
 
             if (m_is_over_time)
             {
@@ -292,7 +293,7 @@ namespace corpc
             return;
         }
         setState(HalfClosing);
-        LogError("shutdown conn[" << m_netsock->getLocalAddr()->toString() << "], fd=" << m_netsock->getFd());
+        LogError("shutdown conn[" << m_netsock->getPeerAddr()->toString() << "], fd=" << m_netsock->getFd());
         // call sys shutdown to send FIN
         // wait client done something, client will send FIN
         // and fd occur read event but byte count is 0
@@ -311,19 +312,19 @@ namespace corpc
         return m_write_buffer.get();
     }
 
-    // bool TcpConnection::getResPackageData(const std::string &msg_req, TinyPbStruct::pb_ptr &pb_struct)
-    // {
-    //     auto it = m_reply_datas.find(msg_req);
-    //     if (it != m_reply_datas.end())
-    //     {
-    //         LogDebug("return a resdata";
-    //         pb_struct = it->second;
-    //         m_reply_datas.erase(it);
-    //         return true;
-    //     }
-    //     LogDebug(msg_req << "|reply data not exist";
-    //     return false;
-    // }
+    bool TcpConnection::getResPackageData(const std::string &msg_req, PbStruct::pb_ptr &pb_struct)
+    {
+        auto it = m_reply_datas.find(msg_req);
+        if (it != m_reply_datas.end())
+        {
+            LogDebug("return a resdata");
+            pb_struct = it->second;
+            m_reply_datas.erase(it);
+            return true;
+        }
+        LogDebug(msg_req << "|reply data not exist");
+        return false;
+    }
 
     AbstractCodeC::ptr TcpConnection::getCodec() const
     {
@@ -347,15 +348,15 @@ namespace corpc
         m_rwmutex.wunlock();
     }
 
-    // void TcpConnection::setOverTimeFlag(bool value)
-    // {
-    //     m_is_over_time = value;
-    // }
+    void TcpConnection::setOverTimeFlag(bool value)
+    {
+        m_is_over_time = value;
+    }
 
-    // bool TcpConnection::getOverTimerFlag()
-    // {
-    //     return m_is_over_time;
-    // }
+    bool TcpConnection::getOverTimerFlag()
+    {
+        return m_is_over_time;
+    }
 
     // Coroutine::ptr TcpConnection::getCoroutine()
     // {

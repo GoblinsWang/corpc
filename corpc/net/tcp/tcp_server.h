@@ -2,6 +2,7 @@
 #define CORPC_NET_TCP_TCP_SERVER_H
 
 #include <map>
+#include <google/protobuf/service.h>
 #include "tcp_connection.h"
 #include "tcp_acceptor.h"
 #include "tcp_connection_time_wheel.h"
@@ -9,7 +10,6 @@
 #include "../net_socket.h"
 #include "../abstract_codec.h"
 #include "../abstract_dispatcher.h"
-#include "../http/http_dispatcher.h"
 #include "../http/http_servlet.h"
 
 namespace corpc
@@ -29,7 +29,7 @@ namespace corpc
 
         TcpConnection::ptr addClient(NetSocket::ptr net_sock);
 
-        // bool registerService(std::shared_ptr<google::protobuf::Service> service);
+        bool registerService(std::shared_ptr<google::protobuf::Service> service);
 
         bool registerHttpServlet(const std::string &url_path, HttpServlet::ptr servlet);
 
@@ -60,7 +60,7 @@ namespace corpc
 
         AbstractCodeC::ptr m_codec;
 
-        ProtocalType m_protocal_type{TinyPb_Protocal};
+        ProtocalType m_protocal_type{Pb_Protocal};
 
         TcpTimeWheel::ptr m_time_wheel;
 

@@ -11,6 +11,8 @@
 
 namespace corpc
 {
+	int m_max_connect_timeout = 60; // 60s
+
 	NetSocket::NetSocket(NetAddress::ptr addr)
 	{
 		m_local_addr = addr;
@@ -49,7 +51,7 @@ namespace corpc
 	NetSocket::NetSocket(int fd, NetAddress::ptr addr)
 	{
 		m_fd = fd;
-		m_local_addr = addr;
+		m_peer_addr = addr;
 		if (fd > 0)
 		{
 			setNonBolckSocket();
@@ -109,6 +111,62 @@ namespace corpc
 		return accept();
 	}
 
+	int NetSocket::connect()
+	{
+		// try connect
+		int n = ::connect(m_fd, reinterpret_cast<sockaddr *>(m_peer_addr->getSockAddr()), m_peer_addr->getSockLen());
+		if (n == 0)
+		{
+			LogDebug("direct connect succ, return");
+			return n;
+		}
+		else if (errno != EINPROGRESS)
+		{
+			LogDebug("connect error and errno is't EINPROGRESS, errno=" << errno << ",error=" << strerror(errno));
+			return n;
+		}
+
+		LogDebug("errno == EINPROGRESS");
+
+		bool is_timeout = false; // 是否超时
+
+		Processor *pro = corpc::Scheduler::getScheduler()->getProcessor(threadIdx); // 当前处理实例
+		Coroutine *cur_cor = pro->getCurRunningCo();								// 当前协程
+		// 超时函数句柄
+		auto timeout_cb = [&is_timeout, pro, cur_cor]()
+		{
+			// 设置超时标志，然后唤醒协程
+			is_timeout = true;
+			pro->resume(cur_cor);
+		};
+
+		// 注册超时事件
+		corpc::TimerEvent::ptr event = std::make_shared<corpc::TimerEvent>(m_max_connect_timeout, false, timeout_cb);
+		pro->getTimer()->addTimerEvent(event);
+
+		auto fd_event = corpc::FdEventContainer::GetFdContainer()->getFdEvent(m_fd);
+		corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->waitEvent(fd_event, m_fd, EPOLLOUT | EPOLLPRI | EPOLLRDHUP | EPOLLHUP);
+
+		// 注销超时事件
+		pro->getTimer()->delTimerEvent(event);
+
+		n = ::connect(m_fd, reinterpret_cast<sockaddr *>(m_peer_addr->getSockAddr()), m_peer_addr->getSockLen());
+		if ((n < 0 && errno == EISCONN) || n == 0)
+		{
+			LogDebug("connect succ");
+			return 0;
+		}
+
+		if (is_timeout)
+		{
+			LogError("connect error,  timeout[ " << m_max_connect_timeout << "ms]");
+			errno = ETIMEDOUT;
+		}
+
+		LogDebug("connect error and errno=" << errno << ", error=" << strerror(errno));
+		return -1;
+	}
+
 	// 从socket中读数据
 	ssize_t NetSocket::read(void *buf, size_t count)
 	{
@@ -121,7 +179,7 @@ namespace corpc
 		{
 			return read(buf, count);
 		}
-		LogTrace("there is no data can read, " << KV(m_fd) << ", yield this coroutine");
+		LogTrace("there is no data can read," << KV(m_fd) << ", yield this coroutine");
 		auto fd_event = corpc::FdEventContainer::GetFdContainer()->getFdEvent(m_fd);
 		corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->waitEvent(fd_event, m_fd, EPOLLIN | EPOLLPRI | EPOLLRDHUP | EPOLLHUP);
 		return ::read(m_fd, buf, count);

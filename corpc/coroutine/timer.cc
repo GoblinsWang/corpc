@@ -60,13 +60,13 @@ namespace corpc
 				is_reset = true;
 			}
 		}
-		LogInfo("m_pending_events size : " << m_pending_events.size() << ", is_reset : " << is_reset);
+		// LogDebug("m_pending_events size : " << m_pending_events.size() << ", is_reset : " << is_reset);
 		m_pending_events.emplace(event->m_arrive_time, event);
 		m_rwmutex.wunlock(); // 释放写锁
 
 		if (is_reset && need_reset)
 		{
-			LogInfo("need reset timer");
+			LogDebug("need reset timer");
 			resetArriveTime();
 		}
 		// LogInfo("add timer event succ");
@@ -156,7 +156,7 @@ namespace corpc
 
 		if (tmp.size() == 0)
 		{
-			LogInfo("no timerevent pending, size = 0");
+			// LogInfo("no timerevent pending, size = 0");
 			return;
 		}
 

@@ -11,7 +11,7 @@ namespace corpc
 
     enum ProtocalType
     {
-        TinyPb_Protocal = 1,
+        Pb_Protocal = 1,
         Http_Protocal = 2
     };
 

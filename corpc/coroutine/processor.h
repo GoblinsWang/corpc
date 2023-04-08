@@ -89,7 +89,7 @@ namespace corpc
 			return m_epoller.get();
 		}
 
-		inline Timer *GetTimer()
+		inline Timer *getTimer()
 		{
 			return m_timer.get();
 		}

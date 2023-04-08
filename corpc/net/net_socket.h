@@ -37,6 +37,9 @@ namespace corpc
 		// accept a new conn, return connfd;
 		int accept();
 
+		// for client
+		int connect();
+
 		// 从socket中读数据
 		ssize_t read(void *buf, size_t count);
 

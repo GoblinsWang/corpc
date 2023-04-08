@@ -16,24 +16,24 @@ namespace corpc
         }
 
         m_event = std::make_shared<TimerEvent>(m_inteval * 1000, true, std::bind(&TcpTimeWheel::loopFunc, this));
-        corpc::Scheduler::getScheduler()->getProcessor(0)->GetTimer()->addTimerEvent(m_event); // 0
+        corpc::Scheduler::getScheduler()->getProcessor(0)->getTimer()->addTimerEvent(m_event); // 0
     }
 
     TcpTimeWheel::~TcpTimeWheel()
     {
-        corpc::Scheduler::getScheduler()->getProcessor(0)->GetTimer()->delTimerEvent(m_event); // 0
+        corpc::Scheduler::getScheduler()->getProcessor(0)->getTimer()->delTimerEvent(m_event); // 0
     }
 
     void TcpTimeWheel::fresh(TcpConnectionSlot::ptr slot)
     {
-        LogDebug("fresh connection");
+        // LogDebug("fresh connection");
         int index = (m_cur_bucket - 1 + m_bucket_count) % m_bucket_count;
         m_wheel[index].emplace_back(slot);
     }
 
     void TcpTimeWheel::loopFunc()
     {
-        LogError("clear bucket size: " << m_wheel[m_cur_bucket].size() << ", index = " << m_cur_bucket);
+        // LogDebug("clear bucket size: " << m_wheel[m_cur_bucket].size() << ", index = " << m_cur_bucket);
         m_wheel[m_cur_bucket].clear();
         m_cur_bucket = (m_cur_bucket + 1) % m_bucket_count;
     }

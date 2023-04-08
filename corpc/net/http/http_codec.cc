@@ -21,7 +21,7 @@ namespace corpc
 
     void HttpCodeC::encode(TcpBuffer *buf, AbstractData *data)
     {
-        LogDebug("------test encode------");
+        LogDebug("----------test http encode----------");
         HttpResponse *response = dynamic_cast<HttpResponse *>(data);
         response->encode_succ = false;
 
@@ -32,12 +32,12 @@ namespace corpc
            << "\r\n"
            << response->m_response_body;
         std::string http_res = ss.str();
-        LogDebug("encode http response is:  " << http_res);
+        // LogDebug("encode http response is:  " << http_res);
 
         buf->writeToBuffer(http_res.c_str(), http_res.length());
-        LogDebug("succ encode and write to buffer, writeindex=" << buf->writeIndex());
+        LogDebug("succ encode and write to buffer, writeindex = " << buf->writeIndex());
         response->encode_succ = true;
-        LogDebug("------test encode end------");
+        LogDebug("----------test http encode end----------");
     }
 
     void HttpCodeC::decode(TcpBuffer *buf, AbstractData *data)

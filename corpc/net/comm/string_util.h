@@ -1,5 +1,5 @@
-#ifndef CORPC_COMM_STRING_UTIL_H
-#define CORPC_COMM_STRING_UTIL_H
+#ifndef CORPC_NET_COMM_STRING_UTIL_H
+#define CORPC_NET_COMM_STRING_UTIL_H
 
 #include <map>
 #include <string>

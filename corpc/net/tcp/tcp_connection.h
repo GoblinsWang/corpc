@@ -12,6 +12,7 @@
 #include "../abstract_codec.h"
 #include "../net_socket.h"
 #include "../http/http_request.h"
+#include "../pb/pb_codec.h"
 
 namespace corpc
 {
@@ -37,7 +38,7 @@ namespace corpc
 
         TcpConnection(corpc::TcpServer *tcp_svr, NetSocket::ptr net_sock, int buff_size);
 
-        // TcpConnection(corpc::TcpClient *tcp_cli, corpc::Processor *processor, int fd, int buff_size, NetAddress::ptr peer_addr);
+        TcpConnection(corpc::TcpClient *tcp_cli, int fd, int buff_size, NetAddress::ptr peer_addr);
 
         ~TcpConnection();
 
@@ -64,7 +65,7 @@ namespace corpc
 
         AbstractCodeC::ptr getCodec() const;
 
-        // bool getResPackageData(const std::string &msg_req, TinyPbStruct::pb_ptr &pb_struct);
+        bool getResPackageData(const std::string &msg_req, PbStruct::pb_ptr &pb_struct);
 
         void registerToTimeWheel();
 
@@ -72,6 +73,8 @@ namespace corpc
 
     public:
         void MainServerLoopCorFunc();
+
+        int toConnect();
 
         void input();
 
@@ -100,7 +103,7 @@ namespace corpc
 
     private:
         TcpServer *m_tcp_svr{nullptr};
-        // TcpClient *m_tcp_cli{nullptr};
+        TcpClient *m_tcp_cli{nullptr};
 
         // Processor *m_processor{nullptr};
 
@@ -109,6 +112,8 @@ namespace corpc
         NetSocket::ptr m_netsock;
         TcpConnectionState m_state{TcpConnectionState::Connected};
         ConnectionType m_connection_type{ServerConnection};
+
+        // NetAddress::ptr m_peer_addr;
 
         TcpBuffer::ptr m_read_buffer;
         TcpBuffer::ptr m_write_buffer;
@@ -125,7 +130,7 @@ namespace corpc
 
         int64_t m_last_active_time;
 
-        // std::map<std::string, std::shared_ptr<TinyPbStruct>> m_reply_datas;
+        std::map<std::string, std::shared_ptr<PbStruct>> m_reply_datas;
 
         std::weak_ptr<AbstractSlot<TcpConnection>> m_weak_slot;
 

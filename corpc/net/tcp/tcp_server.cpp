@@ -3,18 +3,14 @@
 #include <fcntl.h>
 #include <string.h>
 #include "tcp_server.h"
-#include "tcp_connection.h"
-#include "../net_socket.h"
-#include "../common.h"
-// #include "../tcp_connection_time_wheel.h"
 #include "../http/http_codec.h"
-// #include "tinyrpc/net/http/http_dispatcher.h"
-// #include "tinyrpc/net/tinypb/tinypb_rpc_dispatcher.h"
+#include "../http/http_dispatcher.h"
+#include "../pb/pb_rpc_dispatcher.h"
 
 namespace corpc
 {
 
-    TcpServer::TcpServer(NetAddress::ptr addr, ProtocalType type /*= TinyPb_Protocal*/) : m_addr(addr)
+    TcpServer::TcpServer(NetAddress::ptr addr, ProtocalType type /*= Pb_Protocal*/) : m_addr(addr)
     {
         if (type == Http_Protocal)
         {
@@ -24,15 +20,15 @@ namespace corpc
         }
         else
         {
-            // m_dispatcher = std::make_shared<TinyPbRpcDispacther>();
-            // m_codec = std::make_shared<TinyPbCodeC>();
-            // m_protocal_type = TinyPb_Protocal;
+            m_dispatcher = std::make_shared<PbRpcDispacther>();
+            m_codec = std::make_shared<PbCodeC>();
+            m_protocal_type = Pb_Protocal;
         }
 
         m_time_wheel = std::make_shared<TcpTimeWheel>(10, 6); // 时间轮->10个slot，6秒间隔
 
         m_clear_clent_timer_event = std::make_shared<TimerEvent>(10000, true, std::bind(&TcpServer::ClearClientTimerFunc, this));
-        corpc::Scheduler::getScheduler()->getProcessor(0)->GetTimer()->addTimerEvent(m_clear_clent_timer_event); // 0
+        corpc::Scheduler::getScheduler()->getProcessor(0)->getTimer()->addTimerEvent(m_clear_clent_timer_event); // 0
 
         LogInfo("TcpServer setup on [" << m_addr->toString() << "]");
     }
@@ -60,7 +56,7 @@ namespace corpc
 
             TcpConnection::ptr conn = addClient(sock);
             conn->initServer();
-            LogDebug("tcpconnection init succ, and fd is" << sock->getFd());
+            LogDebug("tcpconnection init succ, and fd is " << sock->getFd());
 
             m_tcp_counts++;
             LogDebug("current tcp connection count is [" << m_tcp_counts << "]");
@@ -88,27 +84,27 @@ namespace corpc
         }
     }
 
-    // bool TcpServer::registerService(std::shared_ptr<google::protobuf::Service> service)
-    // {
-    //     if (m_protocal_type == TinyPb_Protocal)
-    //     {
-    //         if (service)
-    //         {
-    //             dynamic_cast<TinyPbRpcDispacther *>(m_dispatcher.get())->registerService(service);
-    //         }
-    //         else
-    //         {
-    //             ErrorLog << "register service error, service ptr is nullptr";
-    //             return false;
-    //         }
-    //     }
-    //     else
-    //     {
-    //         ErrorLog << "register service error. Just TinyPB protocal server need to resgister Service";
-    //         return false;
-    //     }
-    //     return true;
-    // }
+    bool TcpServer::registerService(std::shared_ptr<google::protobuf::Service> service)
+    {
+        if (m_protocal_type == Pb_Protocal)
+        {
+            if (service)
+            {
+                dynamic_cast<PbRpcDispacther *>(m_dispatcher.get())->registerService(service);
+            }
+            else
+            {
+                LogError("register service error, service ptr is nullptr");
+                return false;
+            }
+        }
+        else
+        {
+            LogError("register service error. Just Pb protocal server need to resgister Service");
+            return false;
+        }
+        return true;
+    }
 
     bool TcpServer::registerHttpServlet(const std::string &url_path, HttpServlet::ptr servlet)
     {

@@ -12,7 +12,7 @@ namespace corpc
 
         if (str.empty() || split_str.empty() || joiner.empty())
         {
-            LogDebug("str or split_str or joiner_str is empty");
+            LogError("str or split_str or joiner_str is empty");
             return;
         }
         std::string tmp = str;
@@ -28,7 +28,7 @@ namespace corpc
                 {
                     std::string key = i.substr(0, j);
                     std::string value = i.substr(j + joiner.length(), i.length() - j - joiner.length());
-                    LogDebug("insert key = " << key << ", value=" << value);
+                    // LogDebug("insert key = " << key << ", value=" << value);
                     res[key.c_str()] = value;
                 }
             }
