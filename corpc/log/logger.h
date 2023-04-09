@@ -166,7 +166,7 @@ namespace corpc
         bool bindTerminalCoutMap(std::string value1, terminalType value2);
     };
 
-#define KV(value) " " << #value << "=" << value
+#define KV(value) " " << #value << " = " << value
 
 #define COMBINATION_INFO_FILE(coutTypeInfo, message)                                                                               \
     do                                                                                                                             \
