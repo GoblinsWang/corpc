@@ -10,7 +10,6 @@
 #include "../corpc/net/pb/pb_rpc_controller.h"
 #include "test_pb_server.pb.h"
 using namespace corpc;
-Logger *log = Logger::getInstance();
 
 const char *html = "<html><body><h1>Welcome to corpc, just enjoy it!</h1><p>%s</p></body></html>";
 

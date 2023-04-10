@@ -23,12 +23,14 @@ Logger::~Logger()
 
 Logger *Logger::getInstance()
 {
-    // mutex_log.lock();
     if (singleObject == nullptr)
     {
-        singleObject = new Logger();
+        std::lock_guard<std::mutex> lock(mutex_log);
+        if (singleObject == nullptr)
+        {
+            singleObject = new Logger();
+        }
     }
-    // mutex_log.unlock();
     return singleObject;
 }
 
