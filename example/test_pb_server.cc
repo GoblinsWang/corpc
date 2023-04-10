@@ -28,12 +28,6 @@ public:
 
 		LogDebug("QueryServiceImpl.query_name, req={" << request->ShortDebugString() << "}");
 
-		// LogDebug("========================");
-		// LogDebug("this is query_name func");
-		// LogDebug("first begin to sleep 6s");
-		// sleep(6);
-		// LogDebug("sleep 6s end");
-
 		response->set_id(request->id());
 		response->set_name("goblin");
 
@@ -52,9 +46,6 @@ public:
 	{
 
 		LogDebug("QueryServiceImpl.query_age, req={" << request->ShortDebugString() << "}");
-		// LogDebug("QueryServiceImpl.query_age, sleep 5 s begin");
-		// co_sleep(5000);
-		// LogDebug("QueryServiceImpl.query_age, sleep 5 s end");
 
 		response->set_ret_code(0);
 		response->set_res_info("OK");

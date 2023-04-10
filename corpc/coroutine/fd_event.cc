@@ -14,16 +14,17 @@ namespace corpc
     FdEvent::ptr FdEventContainer::getFdEvent(int fd)
     {
 
-        m_rwmutex.rlock();
+        m_mutex.rlock(); // 读锁
+        corpc::FdEvent::ptr res;
         if (fd < static_cast<int>(m_fds.size()))
         {
-            corpc::FdEvent::ptr res = m_fds[fd];
-            m_rwmutex.runlock();
+            res = m_fds[fd];
+            m_mutex.runlock(); // 释放读锁
             return res;
         }
-        m_rwmutex.runlock();
+        m_mutex.runlock(); // 读锁
 
-        m_rwmutex.wlock();
+        m_mutex.wlock(); // 写锁
         /*
             对文件描述数组进行1.5倍扩容
         */
@@ -32,8 +33,8 @@ namespace corpc
         {
             m_fds.push_back(std::make_shared<FdEvent>(i));
         }
-        corpc::FdEvent::ptr res = m_fds[fd];
-        m_rwmutex.wunlock();
+        res = m_fds[fd];
+        m_mutex.wunlock(); // 写锁
         return res;
     }
 
@@ -49,7 +50,7 @@ namespace corpc
     {
         if (g_FdContainer == nullptr)
         {
-            g_FdContainer = new FdEventContainer(1000);
+            g_FdContainer = new FdEventContainer(2000);
         }
         return g_FdContainer;
     }

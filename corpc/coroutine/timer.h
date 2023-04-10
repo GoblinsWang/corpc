@@ -8,7 +8,6 @@
 #include <map>
 #include <queue>
 #include <vector>
-#include <mutex>
 #include <memory>
 #include <functional>
 #include "utils.h"
@@ -91,7 +90,7 @@ namespace corpc
 	private:
 		Processor *m_processor = nullptr;
 
-		RWMutex m_rwmutex;
+		RWMutex m_event_mutex;
 
 		// 定时器事件集合
 		std::multimap<int64_t, TimerEvent::ptr> m_pending_events;

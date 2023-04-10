@@ -55,6 +55,8 @@ namespace corpc
 
 		void addCoroutine(corpc::Coroutine *cor, bool is_wakeup = true);
 
+		void Resume();
+
 		// 恢复运行指定协程
 		void resume(Coroutine *);
 
@@ -75,7 +77,7 @@ namespace corpc
 		// 获取当前正在运行的协程
 		inline Coroutine *getCurRunningCo() { return m_pCurCoroutine; };
 
-		inline Context *getMainCtx() { return &mainCtx_; }
+		inline Context *getMainCtx() { return &m_mainCtx; }
 
 		inline size_t getCoCnt() { return m_coSet.size(); }
 
@@ -132,7 +134,7 @@ namespace corpc
 
 		Coroutine *m_pCurCoroutine;
 
-		Context mainCtx_;
+		Context m_mainCtx;
 	};
 
 }

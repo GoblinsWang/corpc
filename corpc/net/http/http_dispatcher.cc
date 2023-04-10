@@ -4,7 +4,7 @@
 #include "http_request.h"
 #include "http_servlet.h"
 #include "../common.h"
-// #include "tinyrpc/comm/msg_req.h"
+// #include "corpc/comm/msg_req.h"
 
 namespace corpc
 {

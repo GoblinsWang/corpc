@@ -12,15 +12,15 @@ void RWMutex::rlock()
 {
 
     {
-        SpinlockGuard l(lock_);
-        if (state_ == MU_FREE || state_ == MU_READING)
+        SpinlockGuard l(m_lock);
+        if (m_state == MU_FREE || m_state == MU_READING)
         {
-            readingNum_.fetch_add(1);
-            state_ = MU_READING;
+            m_readingNum.fetch_add(1);
+            m_state = MU_READING;
             return;
         }
 
-        waitingCo_.push(Scheduler::getScheduler()->getProcessor(threadIdx)->getCurRunningCo());
+        m_waitingCo.push(Scheduler::getScheduler()->getProcessor(threadIdx)->getCurRunningCo());
     }
     LogInfo("in rlock, yield to wait RWMutex");
     Scheduler::getScheduler()->getProcessor(threadIdx)->yield();
@@ -29,8 +29,8 @@ void RWMutex::rlock()
 
 void RWMutex::runlock()
 {
-    SpinlockGuard l(lock_);
-    auto cur = readingNum_.fetch_add(-1);
+    SpinlockGuard l(m_lock);
+    auto cur = m_readingNum.fetch_add(-1);
     if (cur == 1)
     {
         freeLock();
@@ -41,14 +41,14 @@ void RWMutex::wlock()
 {
 
     {
-        SpinlockGuard l(lock_);
-        if (state_ == MU_FREE)
+        SpinlockGuard l(m_lock);
+        if (m_state == MU_FREE)
         {
-            state_ = MU_WRITING;
+            m_state = MU_WRITING;
             return;
         }
         LogInfo("in wlock, yield to wait RWMutex");
-        waitingCo_.push(Scheduler::getScheduler()->getProcessor(threadIdx)->getCurRunningCo());
+        m_waitingCo.push(Scheduler::getScheduler()->getProcessor(threadIdx)->getCurRunningCo());
     }
 
     Scheduler::getScheduler()->getProcessor(threadIdx)->yield();
@@ -57,18 +57,18 @@ void RWMutex::wlock()
 
 void RWMutex::wunlock()
 {
-    SpinlockGuard l(lock_);
+    SpinlockGuard l(m_lock);
     freeLock();
 }
 
 void RWMutex::freeLock()
 {
-    state_ = MU_FREE;
-    while (!waitingCo_.empty())
+    m_state = MU_FREE;
+    while (!m_waitingCo.empty())
     {
-        auto wakeCo = waitingCo_.front();
-        waitingCo_.pop();
+        auto wakeCo = m_waitingCo.front();
+        m_waitingCo.pop();
         LogInfo("in freeLock, go to wake RWMutex");
-        wakeCo->getMyProcessor()->goCo(wakeCo);
+        wakeCo->getMyProcessor()->addCoroutine(wakeCo);
     }
 }

@@ -53,7 +53,7 @@ namespace corpc
 
     void TcpClient::resetFd()
     {
-        m_processor->GetEpoller()->delEvent(m_fd); // 注销
+        // m_processor->GetEpoller()->delEvent(m_fd); // 注销
         ::close(m_fd);
         m_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (m_fd == -1)
@@ -82,7 +82,7 @@ namespace corpc
 
         while (!is_timeout)
         {
-            LogDebug("begin to connect");
+            // LogDebug("begin to connect");
             if (m_connection->getState() != Connected)
             {
                 int rt = m_connection->toConnect();

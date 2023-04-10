@@ -45,8 +45,9 @@ namespace corpc
 
 	void Timer::addTimerEvent(TimerEvent::ptr event, bool need_reset /*=true*/)
 	{
-		m_rwmutex.wlock(); // 写锁
 		bool is_reset = false;
+
+		m_event_mutex.wlock(); // 写锁
 		if (m_pending_events.empty())
 		{
 			is_reset = true;
@@ -62,11 +63,11 @@ namespace corpc
 		}
 		// LogDebug("m_pending_events size : " << m_pending_events.size() << ", is_reset : " << is_reset);
 		m_pending_events.emplace(event->m_arrive_time, event);
-		m_rwmutex.wunlock(); // 释放写锁
+		m_event_mutex.wunlock(); // 释放写锁
 
 		if (is_reset && need_reset)
 		{
-			LogDebug("need reset timer");
+			// LogDebug("need reset timer");
 			resetArriveTime();
 		}
 		// LogInfo("add timer event succ");
@@ -75,8 +76,7 @@ namespace corpc
 	void Timer::delTimerEvent(TimerEvent::ptr event)
 	{
 		event->m_is_cancled = true;
-
-		m_rwmutex.wlock(); // 写锁
+		m_event_mutex.wlock(); // 写锁
 		auto begin = m_pending_events.lower_bound(event->m_arrive_time);
 		auto end = m_pending_events.upper_bound(event->m_arrive_time);
 		auto it = begin;
@@ -92,7 +92,7 @@ namespace corpc
 		{
 			m_pending_events.erase(it);
 		}
-		m_rwmutex.wunlock(); // 释放写锁
+		m_event_mutex.wunlock(); // 释放写锁
 		LogDebug("del timer event succ, origin arrvite time=" << event->m_arrive_time);
 	}
 
@@ -107,12 +107,12 @@ namespace corpc
 				break;
 			}
 		}
-
-		int64_t now = getNowMs();
-
-		auto it = m_pending_events.begin();
 		std::vector<TimerEvent::ptr> tmps;
 		std::vector<std::pair<int64_t, std::function<void()>>> tasks;
+		int64_t now = getNowMs();
+
+		m_event_mutex.wlock(); // 写锁
+		auto it = m_pending_events.begin();
 		for (it = m_pending_events.begin(); it != m_pending_events.end(); ++it)
 		{
 			if ((*it).first <= now && !((*it).second->m_is_cancled))
@@ -125,9 +125,8 @@ namespace corpc
 				break;
 			}
 		}
-		m_rwmutex.wlock(); // 写锁
 		m_pending_events.erase(m_pending_events.begin(), it);
-		m_rwmutex.wunlock(); // 释放写锁
+		m_event_mutex.wunlock(); // 释放写锁
 
 		for (auto i = tmps.begin(); i != tmps.end(); ++i)
 		{
@@ -150,10 +149,10 @@ namespace corpc
 
 	void Timer::resetArriveTime()
 	{
-		m_rwmutex.rlock(); // 读锁
-		std::multimap<int64_t, TimerEvent::ptr> tmp = m_pending_events;
-		m_rwmutex.runlock(); // 释放读锁
-
+		std::multimap<int64_t, TimerEvent::ptr> tmp;
+		m_event_mutex.rlock(); // 读锁
+		tmp = m_pending_events;
+		m_event_mutex.runlock(); // 释放读锁
 		if (tmp.size() == 0)
 		{
 			// LogInfo("no timerevent pending, size = 0");

@@ -6,7 +6,6 @@
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <assert.h>
-#include <mutex>
 #include "coroutine.h"
 #include "rw_mutex.h"
 #include "../log/logger.h"
@@ -68,7 +67,7 @@ namespace corpc
         static FdEventContainer *GetFdContainer();
 
     private:
-        RWMutex m_rwmutex;
+        RWMutex m_mutex;
         std::vector<FdEvent::ptr> m_fds;
     };
 

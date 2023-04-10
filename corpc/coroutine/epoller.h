@@ -67,7 +67,7 @@ namespace corpc
 
 		int m_epollFd;
 
-		std::mutex m_mutex;
+		// std::mutex m_mutex;
 
 		corpc::Processor *m_processor = nullptr;
 

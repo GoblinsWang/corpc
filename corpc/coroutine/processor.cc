@@ -16,9 +16,9 @@ namespace corpc
 	__thread int threadIdx = -1;
 
 	Processor::Processor(int tid)
-		: m_tid(tid), m_status(PRO_STOPPED), m_pLoop(nullptr), m_pCurCoroutine(nullptr), mainCtx_(0)
+		: m_tid(tid), m_status(PRO_STOPPED), m_pLoop(nullptr), m_pCurCoroutine(nullptr), m_mainCtx(0)
 	{
-		mainCtx_.makeCurContext();
+		m_mainCtx.makeCurContext();
 	}
 
 	Processor::~Processor()
@@ -129,6 +129,11 @@ namespace corpc
 		return false;
 	}
 
+	// void Processor::Resume()
+	// {
+
+	// }
+
 	void Processor::resume(Coroutine *pCo)
 	{
 		if (nullptr == pCo)
@@ -151,7 +156,7 @@ namespace corpc
 		/*
 			切换到主线程，然后将当前协程的上下文保存到当前协程的对象里面
 		*/
-		mainCtx_.swapToMe(m_pCurCoroutine->getCtx());
+		m_mainCtx.swapToMe(m_pCurCoroutine->getCtx());
 	}
 
 	void Processor::wait(int64_t interval)
@@ -167,7 +172,7 @@ namespace corpc
 		/*
 			切换到主线程，然后将当前协程的上下文保存到当前协程的对象里面
 		*/
-		mainCtx_.swapToMe(m_pCurCoroutine->getCtx());
+		m_mainCtx.swapToMe(m_pCurCoroutine->getCtx());
 	}
 
 	void Processor::goCo(Coroutine *pCo)
@@ -217,6 +222,7 @@ namespace corpc
 					Coroutine *pNewCo = nullptr;
 					while (m_newCoroutines.pop(pNewCo))
 					{
+						LogDebug("in exec m_newCoroutines");
 						m_coSet.insert(pNewCo);
 						resume(pNewCo);
 					}
@@ -232,7 +238,7 @@ namespace corpc
 					for (auto deadCo : m_removedCo)
 					{
 						m_coSet.erase(deadCo);
-						// delete deadCo;
+						LogDebug("delete deadCo");
 						{
 							SpinlockGuard lock(m_coPoolLock);
 							m_copool.delete_obj(deadCo);

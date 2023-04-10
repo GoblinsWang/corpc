@@ -20,7 +20,7 @@ namespace corpc
 	class ProcessorSelector
 	{
 	public:
-		ProcessorSelector(std::vector<Processor *> &processors, int strategy = MIN_EVENT_FIRST) : curPro_(0), strategy_(strategy), m_processors(processors) {}
+		ProcessorSelector(std::vector<Processor *> &processors, int strategy = ROUND_ROBIN) : curPro_(0), strategy_(strategy), m_processors(processors) {}
 		~ProcessorSelector() {}
 
 		// 设置分发任务的策略

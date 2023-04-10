@@ -14,44 +14,44 @@
 namespace corpc
 {
 
-    enum muStatus
-    {
-        MU_FREE = 0,
-        MU_READING,
-        MU_WRITING
-    };
+  enum muStatus
+  {
+    MU_FREE = 0,
+    MU_READING,
+    MU_WRITING
+  };
 
-    // 读写锁
-    class RWMutex
-    {
-    public:
-        RWMutex()
-            : state_(MU_FREE), readingNum_(0){};
-        ~RWMutex(){};
+  // 读写锁
+  class RWMutex
+  {
+  public:
+    RWMutex()
+        : m_state(MU_FREE), m_readingNum(0){};
+    ~RWMutex(){};
 
-        DISALLOW_COPY_MOVE_AND_ASSIGN(RWMutex);
+    DISALLOW_COPY_MOVE_AND_ASSIGN(RWMutex);
 
-        // 读锁
-        void rlock();
-        // 解读锁
-        void runlock();
+    // 读锁
+    void rlock();
+    // 解读锁
+    void runlock();
 
-        // 写锁
-        void wlock();
-        // 解写锁
-        void wunlock();
+    // 写锁
+    void wlock();
+    // 解写锁
+    void wunlock();
 
-    private:
-        void freeLock();
+  private:
+    void freeLock();
 
-        int state_;
+    int m_state;
 
-        std::atomic_int readingNum_;
+    std::atomic_int m_readingNum;
 
-        Spinlock lock_;
+    Spinlock m_lock;
 
-        std::queue<Coroutine *> waitingCo_;
-    };
+    std::queue<Coroutine *> m_waitingCo;
+  };
 
 }
 

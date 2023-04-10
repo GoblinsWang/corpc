@@ -122,7 +122,7 @@ namespace corpc
 		}
 		else if (errno != EINPROGRESS)
 		{
-			LogDebug("connect error and errno is't EINPROGRESS, errno=" << errno << ",error=" << strerror(errno));
+			// LogDebug("connect error and errno is't EINPROGRESS, errno=" << errno << ",error=" << strerror(errno));
 			return n;
 		}
 
@@ -175,10 +175,10 @@ namespace corpc
 		{
 			return ret;
 		}
-		if (ret == -1 && errno == EINTR) // 被中断信号（只有阻塞状态才会出现）
-		{
-			return read(buf, count);
-		}
+		// if (ret == -1 && errno == EINTR) // 被中断信号（只有阻塞状态才会出现）
+		// {
+		// 	return read(buf, count);
+		// }
 		LogTrace("there is no data can read," << KV(m_fd) << ", yield this coroutine");
 		auto fd_event = corpc::FdEventContainer::GetFdContainer()->getFdEvent(m_fd);
 		corpc::Scheduler::getScheduler()->getProcessor(threadIdx)->waitEvent(fd_event, m_fd, EPOLLIN | EPOLLPRI | EPOLLRDHUP | EPOLLHUP);
@@ -189,7 +189,8 @@ namespace corpc
 	ssize_t NetSocket::send(const void *buf, size_t count)
 	{
 		// 忽略SIGPIPE信号
-		size_t sendIdx = ::send(m_fd, buf, count, MSG_NOSIGNAL);
+		// size_t sendIdx = ::send(m_fd, buf, count, MSG_NOSIGNAL);
+		size_t sendIdx = ::write(m_fd, buf, count);
 		if (sendIdx >= count)
 		{
 			return count;

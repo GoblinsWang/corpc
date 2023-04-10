@@ -6,10 +6,25 @@
 #define CORPC_COROUTINE_CONTEXT_H
 #include "utils.h"
 #include "parameter.h"
-#include <ucontext.h>
+#include "../log/logger.h"
+// #include <ucontext.h>
 
 namespace corpc
 {
+
+	enum
+	{
+		kRBP = 6,	  // rbp, bottom of stack
+		kRDI = 7,	  // rdi, first para when call function
+		kRSI = 8,	  // rsi, second para when call function
+		kRETAddr = 9, // the next excute cmd address, it will be assigned to rip
+		kRSP = 13,	  // rsp, top of stack
+	};
+
+	struct coctx
+	{
+		void *regs[14];
+	};
 
 	class Processor;
 	class Context
@@ -19,12 +34,12 @@ namespace corpc
 		~Context();
 
 		Context(const Context &otherCtx)
-			: ctx_(otherCtx.ctx_), pStack_(otherCtx.pStack_)
+			: m_coctx(otherCtx.m_coctx), m_pStack(otherCtx.m_pStack)
 		{
 		}
 
 		Context(Context &&otherCtx)
-			: ctx_(otherCtx.ctx_), pStack_(otherCtx.pStack_)
+			: m_coctx(otherCtx.m_coctx), m_pStack(otherCtx.m_pStack)
 		{
 		}
 
@@ -40,14 +55,17 @@ namespace corpc
 		void swapToMe(Context *pOldCtx);
 
 		// 获取当前上下文的ucontext_t指针
-		inline struct ucontext_t *getUCtx() { return &ctx_; };
+		// inline struct ucontext_t *getUCtx() { return &m_coctx; };
+		inline struct coctx *getUCtx() { return &m_coctx; };
 
 	private:
-		struct ucontext_t ctx_;
+		// struct ucontext_t m_coctx;
 
-		void *pStack_;
+		coctx m_coctx; // coroutine regs
 
-		size_t stackSize_;
+		void *m_pStack;
+
+		size_t m_stackSize;
 	};
 
 }

@@ -23,12 +23,12 @@ Logger::~Logger()
 
 Logger *Logger::getInstance()
 {
-    mutex_log.lock();
+    // mutex_log.lock();
     if (singleObject == nullptr)
     {
         singleObject = new Logger();
     }
-    mutex_log.unlock();
+    // mutex_log.unlock();
     return singleObject;
 }
 

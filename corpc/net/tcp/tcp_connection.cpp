@@ -334,18 +334,20 @@ namespace corpc
     TcpConnectionState TcpConnection::getState()
     {
         TcpConnectionState state;
-        m_rwmutex.rlock(); // 读锁
+
+        m_mutex.rlock(); // 读锁
         state = m_state;
-        m_rwmutex.runlock();
+        m_mutex.runlock();
 
         return state;
     }
 
     void TcpConnection::setState(const TcpConnectionState &state)
     {
-        m_rwmutex.wlock();
+
+        m_mutex.wlock(); // 写锁
         m_state = state;
-        m_rwmutex.wunlock();
+        m_mutex.wunlock();
     }
 
     void TcpConnection::setOverTimeFlag(bool value)
