@@ -53,7 +53,7 @@ namespace corpc
 
     void TcpClient::resetFd()
     {
-        // m_processor->GetEpoller()->delEvent(m_fd); // 注销
+        // m_processor->getEpoller()->delEvent(m_fd); // 注销
         ::close(m_fd);
         m_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (m_fd == -1)
@@ -167,7 +167,7 @@ namespace corpc
 
     err_deal:
         // connect error should close fd and reopen new one
-        m_processor->GetEpoller()->delEvent(m_fd); // 注销
+        m_processor->getEpoller()->delEvent(m_fd); // 注销
         ::close(m_fd);
 
         m_fd = socket(AF_INET, SOCK_STREAM, 0);

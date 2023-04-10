@@ -86,7 +86,7 @@ namespace corpc
 		void goCoBatch(std::vector<Coroutine *> &cos);
 
 	public:
-		inline Epoller *GetEpoller()
+		inline Epoller *getEpoller()
 		{
 			return m_epoller.get();
 		}

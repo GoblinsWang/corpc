@@ -11,7 +11,7 @@ namespace corpc
     {
         if (m_listener->getFd() > 0)
         {
-            corpc::Scheduler::getScheduler()->getProcessor(0)->GetEpoller()->delEvent(m_listener->getFd()); // 0
+            corpc::Scheduler::getScheduler()->getProcessor(0)->getEpoller()->delEvent(m_listener->getFd()); // 0
             ::close(m_listener->getFd());
         }
     }

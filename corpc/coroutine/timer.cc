@@ -31,14 +31,14 @@ namespace corpc
 		{
 			LogError("timerfd_create error");
 		}
-		m_processor->GetEpoller()->addEvent(this, m_fd, EPOLLIN | EPOLLPRI | EPOLLRDHUP);
+		m_processor->getEpoller()->addEvent(this, m_fd, EPOLLIN | EPOLLPRI | EPOLLRDHUP);
 	}
 
 	Timer::~Timer()
 	{
 		if (m_fd > 0)
 		{
-			m_processor->GetEpoller()->delEvent(m_fd);
+			m_processor->getEpoller()->delEvent(m_fd);
 			::close(m_fd);
 		}
 	}

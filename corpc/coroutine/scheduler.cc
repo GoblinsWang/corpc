@@ -6,73 +6,70 @@
 #include "spinlock_guard.h"
 #include <sys/sysinfo.h>
 
-using namespace corpc;
-
-Scheduler *Scheduler::m_pScheduler = nullptr;
-std::mutex Scheduler::m_scherMtx;
-
-Scheduler::Scheduler()
-	: m_proSelector(m_processors)
+namespace corpc
 {
-}
 
-Scheduler::~Scheduler()
-{
-	for (auto pP : m_processors)
+	Scheduler *Scheduler::m_scheduler = nullptr;
+	std::mutex Scheduler::m_sche_mutex;
+
+	Scheduler::Scheduler()
+		: m_selector(m_processors), m_pro_cnt(::get_nprocs_conf())
 	{
-		pP->stop();
 	}
-	for (auto pP : m_processors)
-	{
-		pP->join();
-		delete pP;
-	}
-}
 
-bool Scheduler::startScheduler(int threadCnt)
-{
-	for (int i = 0; i < threadCnt; ++i)
+	Scheduler::~Scheduler()
 	{
-		LogDebug("init " << i << " processor");
-		m_processors.emplace_back(new Processor(i));
-		m_processors[i]->loop();
-	}
-	return true;
-}
-
-Scheduler *Scheduler::getScheduler()
-{
-	if (nullptr == m_pScheduler)
-	{
-		std::lock_guard<std::mutex> lock(m_scherMtx);
-		if (nullptr == m_pScheduler)
+		for (auto pro : m_processors)
 		{
-			m_pScheduler = new Scheduler();
-			m_pScheduler->startScheduler(::get_nprocs_conf());
+			pro->stop();
+		}
+		for (auto pro : m_processors)
+		{
+			pro->join();
+			delete pro;
 		}
 	}
-	return m_pScheduler;
-}
 
-void Scheduler::join()
-{
-	for (auto pP : m_processors)
+	Scheduler *Scheduler::getScheduler()
 	{
-		pP->join();
+		if (nullptr == m_scheduler)
+		{
+			std::lock_guard<std::mutex> lock(m_sche_mutex);
+			if (nullptr == m_scheduler)
+			{
+				m_scheduler = new Scheduler();
+				m_scheduler->startScheduler(m_scheduler->getProCnt());
+			}
+		}
+		return m_scheduler;
 	}
-}
 
-Processor *Scheduler::getProcessor(int id)
-{
-	return m_processors[id];
-}
+	Processor *Scheduler::getProcessor(int id)
+	{
+		return m_processors[id];
+	}
 
-Processor *Scheduler::getProcessor()
-{
-	return m_proSelector.next();
-}
+	Processor *Scheduler::getProcessor()
+	{
+		return m_selector.next();
+	}
 
-int Scheduler::getProCnt()
-{
-	return static_cast<int>(m_processors.size());
+	void Scheduler::join()
+	{
+		for (auto pro : m_processors)
+		{
+			pro->join();
+		}
+	}
+
+	bool Scheduler::startScheduler(int threadCnt)
+	{
+		for (int i = 0; i < threadCnt; ++i)
+		{
+			LogDebug("init " << i << " processor");
+			m_processors.emplace_back(new Processor(i));
+			m_processors[i]->loop();
+		}
+		return true;
+	}
 }

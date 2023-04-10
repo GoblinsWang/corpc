@@ -21,7 +21,6 @@ namespace corpc
     MU_WRITING
   };
 
-  // 读写锁
   class RWMutex
   {
   public:
@@ -33,11 +32,13 @@ namespace corpc
 
     // 读锁
     void rlock();
+
     // 解读锁
     void runlock();
 
     // 写锁
     void wlock();
+
     // 解写锁
     void wunlock();
 

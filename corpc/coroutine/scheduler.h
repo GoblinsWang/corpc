@@ -19,6 +19,7 @@ namespace corpc
 	{
 	protected:
 		Scheduler();
+
 		~Scheduler();
 
 	public:
@@ -26,29 +27,35 @@ namespace corpc
 
 		static Scheduler *getScheduler();
 
-		// 指定实例
+		// Select the corresponding processing instance based on the ID
 		Processor *getProcessor(int id);
 
-		// 不指定实例，按照策略进行选择
+		// Without an ID, select the processing instance based on a strategy.
 		Processor *getProcessor();
-
-		int getProCnt();
 
 		void join();
 
 	private:
-		// 初始化Scheduler，threadCnt为开启几个线程
+		// Initialize the Scheduler with threadCnt indicating how many threads to open.
 		bool startScheduler(int threadCnt);
 
-		// 日志管理器实例
-		static Scheduler *m_pScheduler;
+		inline int getProCnt() const
+		{
+			return m_pro_cnt;
+		}
 
-		// 用于保护的锁，为了服务器执行效率，原则上不允许长久占有此锁
-		static std::mutex m_scherMtx;
+	private:
+		// Instance of a global scheduler.
+		static Scheduler *m_scheduler;
+
+		// The lock used for protection should not be held for a long time in principle for the sake of server performance efficiency.
+		static std::mutex m_sche_mutex;
+
+		int m_pro_cnt;
 
 		std::vector<Processor *> m_processors;
 
-		ProcessorSelector m_proSelector;
+		ProcessorSelector m_selector;
 	};
 
 }

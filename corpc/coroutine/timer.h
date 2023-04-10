@@ -34,9 +34,8 @@ namespace corpc
 
 		void resetTime()
 		{
-			// LogDebug("reset tiemrevent, origin arrivetime=" << m_arrive_time);
+
 			m_arrive_time = getNowMs() + m_interval;
-			// DLogDebug("reset tiemrevent, now arrivetime=" << m_arrive_time);
 			m_is_cancled = false;
 		}
 
@@ -66,7 +65,6 @@ namespace corpc
 
 	class Processor;
 
-	// 定时器
 	class Timer : public corpc::FdEvent
 	{
 	public:
@@ -78,11 +76,13 @@ namespace corpc
 
 		DISALLOW_COPY_MOVE_AND_ASSIGN(Timer);
 
+		// Add a new scheduled task
 		void addTimerEvent(TimerEvent::ptr event, bool need_reset = true);
 
+		// Delete an old scheduled task
 		void delTimerEvent(TimerEvent::ptr event);
 
-		// 执行定时器的任务
+		// To execute tasks that have reached their expiration date
 		void onTimer();
 
 		void resetArriveTime();
@@ -92,7 +92,7 @@ namespace corpc
 
 		RWMutex m_event_mutex;
 
-		// 定时器事件集合
+		// Collection of timer events
 		std::multimap<int64_t, TimerEvent::ptr> m_pending_events;
 	};
 

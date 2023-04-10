@@ -16,24 +16,31 @@ namespace corpc
 		ROUND_ROBIN			 // 轮流分发
 	};
 
-	// 事件管理器选择器，决定下一个事件应该放入哪个事件管理器中
+	// The event manager selector decides which event should be placed in the next event manager.
 	class ProcessorSelector
 	{
 	public:
-		ProcessorSelector(std::vector<Processor *> &processors, int strategy = ROUND_ROBIN) : curPro_(0), strategy_(strategy), m_processors(processors) {}
-		~ProcessorSelector() {}
+		ProcessorSelector(std::vector<Processor *> &processors, int strategy = ROUND_ROBIN) : m_curpro_id(0), m_strategy(strategy), m_processors(processors) {}
 
-		// 设置分发任务的策略
-		// MIN_EVENT_FIRST则每次挑选EventService最少的EventManager接收新连接
-		// ROUND_ROBIN则每次轮流挑选EventManager接收新连接
-		inline void setStrategy(int strategy) { strategy_ = strategy; };
+		~ProcessorSelector() {}
 
 		Processor *next();
 
-	private:
-		int curPro_;
+	public:
+		/*
+			Set up strategies for distributing tasks.
+				MIN_EVENT_FIRST : Select the processing instance with the least number of coroutines each time a new coroutine is created.
+				ROUND_ROBIN : Select the processing instance in turn each time a new coroutine is created.
+		*/
+		inline void setStrategy(int strategy)
+		{
+			m_strategy = strategy;
+		};
 
-		int strategy_;
+	private:
+		int m_curpro_id;
+
+		int m_strategy;
 
 		std::vector<Processor *> &m_processors;
 	};

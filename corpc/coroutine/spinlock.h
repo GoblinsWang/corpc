@@ -15,7 +15,7 @@ namespace corpc
 	{
 	public:
 		Spinlock()
-			: sem_(1)
+			: m_sem(1)
 		{
 		}
 
@@ -26,8 +26,8 @@ namespace corpc
 		void lock()
 		{
 			int exp = 1;
-			// 当sem_的值和exp值相等时，sem_被赋值为0,返回true，所以不进入循环
-			while (!sem_.compare_exchange_strong(exp, 0))
+			// 当m_sem的值和exp值相等时，m_sem被赋值为0,返回true，所以不进入循环
+			while (!m_sem.compare_exchange_strong(exp, 0))
 			{
 				exp = 1;
 			}
@@ -35,11 +35,11 @@ namespace corpc
 
 		void unlock()
 		{
-			sem_.store(1);
+			m_sem.store(1);
 		}
 
 	private:
-		std::atomic_int sem_;
+		std::atomic_int m_sem;
 	};
 
 }
