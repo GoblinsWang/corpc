@@ -13,7 +13,7 @@ namespace corpc
 	std::mutex Scheduler::m_sche_mutex;
 
 	Scheduler::Scheduler()
-		: m_selector(m_processors), m_pro_cnt(::get_nprocs_conf())
+		: m_pro_cnt(::get_nprocs_conf()), m_selector(m_processors)
 	{
 	}
 

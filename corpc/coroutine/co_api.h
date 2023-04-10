@@ -28,6 +28,5 @@ namespace corpc
 	// 等待调度器的结束
 	void sche_join();
 
-	//////////////网络相关系统调用使用Socket.h头中的封装//////////
 }
 #endif
