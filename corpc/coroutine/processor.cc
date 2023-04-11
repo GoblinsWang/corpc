@@ -118,22 +118,6 @@ namespace corpc
 		}
 	}
 
-	bool Processor::isLoopThread() const
-	{
-		if (m_tid == threadIdx)
-		{
-			LogDebug("isLoopThread() return true");
-			return true;
-		}
-		LogDebug("m_tid = " << m_tid << ", ThreadIdx = " << threadIdx << "return false");
-		return false;
-	}
-
-	// void Processor::Resume()
-	// {
-
-	// }
-
 	void Processor::resume(Coroutine *pCo)
 	{
 		if (nullptr == pCo)
@@ -154,7 +138,7 @@ namespace corpc
 	{
 		m_pCurCoroutine->yield();
 		/*
-			切换到主线程，然后将当前协程的上下文保存到当前协程的对象里面
+			Switch to the main thread and then save the context of the current coroutine into the object of the current coroutine.
 		*/
 		m_mainCtx.swapToMe(m_pCurCoroutine->getCtx());
 	}
@@ -170,25 +154,9 @@ namespace corpc
 		TimerEvent::ptr event = std::make_shared<TimerEvent>(interval, false, event_cb);
 		m_timer->addTimerEvent(event);
 		/*
-			切换到主线程，然后将当前协程的上下文保存到当前协程的对象里面
+			Switch to the main thread and then save the context of the current coroutine into the object of the current coroutine.
 		*/
 		m_mainCtx.swapToMe(m_pCurCoroutine->getCtx());
-	}
-
-	void Processor::goCo(Coroutine *pCo)
-	{
-		m_newCoroutines.push(pCo);
-		m_epoller->wakeup();
-	}
-
-	void Processor::goCoBatch(std::vector<Coroutine *> &cos)
-	{
-		for (auto pCo : cos)
-		{
-			m_newCoroutines.push(pCo);
-		}
-
-		m_epoller->wakeup();
 	}
 
 	bool Processor::loop()
@@ -202,7 +170,7 @@ namespace corpc
 		m_timer = std::make_shared<Timer>(this);
 		m_epoller->setTimerfd(m_timer->getFd());
 
-		// 初始化loop
+		// initial loop
 		m_pLoop = new std::thread(
 			[this]
 			{
@@ -210,7 +178,7 @@ namespace corpc
 				m_status = PRO_RUNNING;
 				while (PRO_RUNNING == m_status)
 				{
-					// 清空所有列表
+					// clear actCors vec
 					if (m_actCoroutines.size())
 					{
 						m_actCoroutines.clear();
@@ -218,7 +186,7 @@ namespace corpc
 					// get active tasks
 					m_epoller->getActiveTasks(parameter::epollTimeOutMs, m_actCoroutines);
 
-					// 执行新来的协程
+					// execute new coming coroutines
 					Coroutine *pNewCo = nullptr;
 					while (m_newCoroutines.pop(pNewCo))
 					{
@@ -226,15 +194,15 @@ namespace corpc
 						m_coSet.insert(pNewCo);
 						resume(pNewCo);
 					}
-					// LogTrace("m_coSet : " << KV(m_coSet.size()));
-					// 执行被唤醒的协程
+
+					// execute the awakened coroutines
 					size_t actCoCnt = m_actCoroutines.size();
 					for (size_t i = 0; i < actCoCnt; ++i)
 					{
 						resume(m_actCoroutines[i]);
 					}
 
-					// 清除已经执行完毕的协程
+					// clear completed coroutines
 					for (auto deadCo : m_removedCo)
 					{
 						m_coSet.erase(deadCo);
@@ -264,6 +232,17 @@ namespace corpc
 	void Processor::killCurCo()
 	{
 		m_removedCo.push_back(m_pCurCoroutine);
+	}
+
+	bool Processor::isLoopThread() const
+	{
+		if (m_tid == threadIdx)
+		{
+			LogDebug("isLoopThread() return true");
+			return true;
+		}
+		LogDebug("m_tid = " << m_tid << ", ThreadIdx = " << threadIdx << "return false");
+		return false;
 	}
 
 }

@@ -55,17 +55,15 @@ namespace corpc
 
 		void addCoroutine(corpc::Coroutine *cor, bool is_wakeup = true);
 
-		void Resume();
-
-		// 恢复运行指定协程
+		// Resume the specified coroutine
 		void resume(Coroutine *);
 
 		void yield();
 
-		// 当前协程等待time毫秒
+		// Current coroutine waiting interval(milliseconds)
 		void wait(int64_t interval);
 
-		// 清除当前正在运行的协程
+		// Add the currently running coroutine to the delete list
 		void killCurCo();
 
 		bool loop();
@@ -74,18 +72,14 @@ namespace corpc
 
 		void join();
 
-		// 获取当前正在运行的协程
+	public:
+		// Obtain the currently running coroutine
 		inline Coroutine *getCurRunningCo() { return m_pCurCoroutine; };
 
 		inline Context *getMainCtx() { return &m_mainCtx; }
 
 		inline size_t getCoCnt() { return m_coSet.size(); }
 
-		void goCo(Coroutine *co);
-
-		void goCoBatch(std::vector<Coroutine *> &cos);
-
-	public:
 		inline Epoller *getEpoller()
 		{
 			return m_epoller.get();
@@ -100,36 +94,34 @@ namespace corpc
 		bool isLoopThread() const;
 
 	private:
-		// 该处理器的线程号
+		// The number of the processor
 		int m_tid;
-
 		int m_status;
 
 		Epoller::ptr m_epoller;
-
 		Timer::ptr m_timer;
 
 		std::mutex m_mutex;
 		std::thread *m_pLoop;
 
-		std::map<int, epoll_event> m_pending_add_fds;
-		std::vector<int> m_pending_del_fds;
+		// std::map<int, epoll_event> m_pending_add_fds;
+		// std::vector<int> m_pending_del_fds;
 		std::vector<std::function<void()>> m_pending_tasks;
-
 		LockFreeRingBuffer<Coroutine *, 1000> m_newCoroutines;
 
-		// 对象池的锁
-		Spinlock m_coPoolLock;
-
-		// EventEpoller发现的活跃事件所放的列表
+		// List of active events discovered by EventEpoller
 		std::vector<Coroutine *> m_actCoroutines;
 
+		// The collection of all unfinished coroutines on this thread
 		std::set<Coroutine *> m_coSet;
 
-		// 被移除的协程列表，要移除某一个事件会先放在该列表中，一次循环结束才会真正delete
+		// The list of removed coroutines will first be placed in the list to remove an event, and only after one loop is completed will it be truly deleted
 		std::vector<Coroutine *> m_removedCo;
 
-		// 对象池
+		// Lock for objPool
+		Spinlock m_coPoolLock;
+
+		// objPool
 		ObjPool<Coroutine> m_copool;
 
 		Coroutine *m_pCurCoroutine;
