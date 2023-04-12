@@ -35,7 +35,7 @@ namespace corpc
 
 		inline void delete_aux(std::false_type, void *obj);
 
-		MemPool<sizeof(T)> _memPool;
+		MemPool<sizeof(T)> m_memPool;
 	};
 
 	template <class T>
@@ -49,14 +49,14 @@ namespace corpc
 	template <typename... Args>
 	inline T *ObjPool<T>::new_aux(std::true_type, Args... args)
 	{
-		return static_cast<T *>(_memPool.AllocAMemBlock());
+		return static_cast<T *>(m_memPool.AllocAMemBlock());
 	}
 
 	template <class T>
 	template <typename... Args>
 	inline T *ObjPool<T>::new_aux(std::false_type, Args... args)
 	{
-		void *newPos = _memPool.AllocAMemBlock();
+		void *newPos = m_memPool.AllocAMemBlock();
 		return new (newPos) T(args...);
 	}
 
@@ -73,14 +73,14 @@ namespace corpc
 	template <class T>
 	inline void ObjPool<T>::delete_aux(std::true_type, void *obj)
 	{
-		_memPool.FreeAMemBlock(obj);
+		m_memPool.FreeAMemBlock(obj);
 	}
 
 	template <class T>
 	inline void ObjPool<T>::delete_aux(std::false_type, void *obj)
 	{
 		(static_cast<T *>(obj))->~T();
-		_memPool.FreeAMemBlock(obj);
+		m_memPool.FreeAMemBlock(obj);
 	}
 
 }

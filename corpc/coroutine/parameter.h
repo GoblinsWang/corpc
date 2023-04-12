@@ -10,19 +10,19 @@ namespace corpc
 {
 	namespace parameter
 	{
-		// 协程栈大小
+		// Stack size of coroutine
 		const static size_t coroutineStackSize = 32 * 1024;
 
-		// 获取活跃的epoll_event的数组的初始长度
+		// The initial length of the array of epoll_events
 		static constexpr int epollerListFirstSize = 16;
 
-		// epoll_wait的阻塞时长
+		// The blocking duration of the epoll_wait
 		static constexpr int epollTimeOutMs = 10000;
 
-		// 监听队列的长度
+		// The length of the listening queue
 		constexpr static unsigned backLog = 4096;
 
-		// 内存池没有空闲内存块时申请memPoolMallocObjCnt个对象大小的内存块
+		// Request memPoolMallocObjCnt memory block of object size when there is no free memory block in the Memory pool
 		static constexpr size_t memPoolMallocObjCnt = 40;
 	}
 

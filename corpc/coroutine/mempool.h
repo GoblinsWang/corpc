@@ -19,21 +19,21 @@ namespace corpc
 		};
 	};
 
-	// 每次可以从内存池中获取objSize大小的内存块
+	// Each time, you can get a memory block with the size of objSize from the Memory pool
 	template <size_t objSize>
 	class MemPool
 	{
 	public:
 		MemPool()
-			: _freeListHead(nullptr), _mallocListHead(nullptr), _mallocTimes(0)
+			: m_freeListHead(nullptr), m_mallocListHead(nullptr), m_mallocTimes(0)
 		{
 			if (objSize < sizeof(MemBlockNode))
 			{
-				objSize_ = sizeof(MemBlockNode);
+				m_objSize = sizeof(MemBlockNode);
 			}
 			else
 			{
-				objSize_ = objSize;
+				m_objSize = objSize;
 			}
 		};
 
@@ -45,23 +45,26 @@ namespace corpc
 		void FreeAMemBlock(void *block);
 
 	private:
-		// 空闲链表
-		MemBlockNode *_freeListHead;
-		// malloc的大内存块链表
-		MemBlockNode *_mallocListHead;
-		// 实际malloc的次数
-		size_t _mallocTimes;
-		// 每个内存块大小
-		size_t objSize_;
+		// free linked list
+		MemBlockNode *m_freeListHead;
+
+		// Large memory block linked list for malloc
+		MemBlockNode *m_mallocListHead;
+
+		// The number of actual mallocs
+		size_t m_mallocTimes;
+
+		// Size of each memory block
+		size_t m_objSize;
 	};
 
 	template <size_t objSize>
 	MemPool<objSize>::~MemPool()
 	{
-		while (_mallocListHead)
+		while (m_mallocListHead)
 		{
-			MemBlockNode *mallocNode = _mallocListHead;
-			_mallocListHead = mallocNode->next;
+			MemBlockNode *mallocNode = m_mallocListHead;
+			m_mallocListHead = mallocNode->next;
 			free(static_cast<void *>(mallocNode));
 		}
 	}
@@ -70,25 +73,25 @@ namespace corpc
 	void *MemPool<objSize>::AllocAMemBlock()
 	{
 		void *ret;
-		if (nullptr == _freeListHead)
+		if (nullptr == m_freeListHead)
 		{
-			size_t mallocCnt = parameter::memPoolMallocObjCnt + _mallocTimes;
-			void *newMallocBlk = malloc(mallocCnt * objSize_ + sizeof(MemBlockNode));
+			size_t mallocCnt = parameter::memPoolMallocObjCnt + m_mallocTimes;
+			void *newMallocBlk = malloc(mallocCnt * m_objSize + sizeof(MemBlockNode));
 			MemBlockNode *mallocNode = static_cast<MemBlockNode *>(newMallocBlk);
-			mallocNode->next = _mallocListHead;
-			_mallocListHead = mallocNode;
+			mallocNode->next = m_mallocListHead;
+			m_mallocListHead = mallocNode;
 			newMallocBlk = static_cast<char *>(newMallocBlk) + sizeof(MemBlockNode);
 			for (size_t i = 0; i < mallocCnt; ++i)
 			{
 				MemBlockNode *newNode = static_cast<MemBlockNode *>(newMallocBlk);
-				newNode->next = _freeListHead;
-				_freeListHead = newNode;
-				newMallocBlk = static_cast<char *>(newMallocBlk) + objSize_;
+				newNode->next = m_freeListHead;
+				m_freeListHead = newNode;
+				newMallocBlk = static_cast<char *>(newMallocBlk) + m_objSize;
 			}
-			++_mallocTimes;
+			++m_mallocTimes;
 		}
-		ret = &(_freeListHead->data);
-		_freeListHead = _freeListHead->next;
+		ret = &(m_freeListHead->data);
+		m_freeListHead = m_freeListHead->next;
 		return ret;
 	}
 
@@ -100,8 +103,8 @@ namespace corpc
 			return;
 		}
 		MemBlockNode *newNode = static_cast<MemBlockNode *>(block);
-		newNode->next = _freeListHead;
-		_freeListHead = newNode;
+		newNode->next = m_freeListHead;
+		m_freeListHead = newNode;
 	}
 }
 
