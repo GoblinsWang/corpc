@@ -18,9 +18,9 @@ namespace corpc
 {
 
 	Epoller::Epoller(corpc::Processor *processor)
-		: m_epollFd(-1), m_activeEpollEvents(parameter::epollerListFirstSize)
+		: m_epoll_fd(-1), m_active_epoll_events(parameter::epollerListFirstSize)
 	{
-		m_epollFd = ::epoll_create1(EPOLL_CLOEXEC);
+		m_epoll_fd = ::epoll_create1(EPOLL_CLOEXEC);
 		m_processor = processor;
 		if ((m_wake_fd = eventfd(0, EFD_NONBLOCK)) <= 0)
 		{
@@ -35,11 +35,10 @@ namespace corpc
 	{
 		if (isEpollFdUseful())
 		{
-			::close(m_epollFd);
+			::close(m_epoll_fd);
 		}
 	};
 
-	// 修改Epoller中的事件
 	bool Epoller::modEvent(FdEvent *fd_event, int fd, int op)
 	{
 		auto it = find(m_fds.begin(), m_fds.end(), fd);
@@ -50,14 +49,13 @@ namespace corpc
 		memset(&event, 0, sizeof(event));
 		event.events = op;
 		event.data.ptr = fd_event;
-		if (::epoll_ctl(m_epollFd, EPOLL_CTL_MOD, fd, &event) < 0)
+		if (::epoll_ctl(m_epoll_fd, EPOLL_CTL_MOD, fd, &event) < 0)
 		{
 			return false;
 		}
 		return true;
 	}
 
-	// 向Epoller中添加事件
 	bool Epoller::addEvent(FdEvent *fd_event, int fd, int op)
 	{
 		auto it = find(m_fds.begin(), m_fds.end(), fd);
@@ -68,7 +66,7 @@ namespace corpc
 		memset(&event, 0, sizeof(event));
 		event.events = op;
 		event.data.ptr = fd_event;
-		if (::epoll_ctl(m_epollFd, EPOLL_CTL_ADD, fd, &event) < 0)
+		if (::epoll_ctl(m_epoll_fd, EPOLL_CTL_ADD, fd, &event) < 0)
 		{
 			return false;
 		}
@@ -77,14 +75,13 @@ namespace corpc
 		return true;
 	}
 
-	// 从Epoller中移除事件
 	bool Epoller::delEvent(int fd)
 	{
 		auto it = find(m_fds.begin(), m_fds.end(), fd);
 		assert(it != m_fds.end());
 		LogTrace("delEvent, fd = " << fd);
 
-		if (::epoll_ctl(m_epollFd, EPOLL_CTL_DEL, fd, nullptr) < 0)
+		if (::epoll_ctl(m_epoll_fd, EPOLL_CTL_DEL, fd, nullptr) < 0)
 		{
 			LogError("epoo_ctl error, fd[" << fd << "], sys errinfo = " << strerror(errno));
 			return false;
@@ -105,7 +102,6 @@ namespace corpc
 
 	void Epoller::wakeup()
 	{
-		// LogDebug("wakeup fd = " << m_wake_fd);
 		uint64_t tmp = 1;
 		uint64_t *p = &tmp;
 		if (::write(m_wake_fd, p, 8) != 8)
@@ -114,10 +110,10 @@ namespace corpc
 		}
 	}
 
-	void Epoller::getActiveTasks(int timeOutMs, std::vector<Coroutine *> &activeCors)
+	void Epoller::getActiveTasks(int timeOutMs, std::vector<Coroutine *> &active_tasks)
 	{
 
-		int actEvNum = ::epoll_wait(m_epollFd, &*m_activeEpollEvents.begin(), static_cast<int>(m_activeEpollEvents.size()), timeOutMs);
+		int actEvNum = ::epoll_wait(m_epoll_fd, &*m_active_epoll_events.begin(), static_cast<int>(m_active_epoll_events.size()), timeOutMs);
 		// LogInfo("epoll_wait back, actEvNum = " << actEvNum);
 
 		if (actEvNum < 0)
@@ -128,7 +124,7 @@ namespace corpc
 		{
 			for (int i = 0; i < actEvNum; ++i)
 			{
-				epoll_event one_event = m_activeEpollEvents[i];
+				epoll_event one_event = m_active_epoll_events[i];
 				corpc::FdEvent *ptr = (corpc::FdEvent *)one_event.data.ptr;
 				int fd = ptr->getFd();
 				// LogDebug("fd = " << one_event.data.fd);
@@ -149,7 +145,6 @@ namespace corpc
 				else if (fd == m_timer_fd && (one_event.events & READ))
 				{
 					// LogDebug(" is m_timer_fd, fd=[" << m_wake_fd << "]");
-					// TODO：
 					m_processor->getTimer()->onTimer();
 				}
 				else
@@ -166,20 +161,20 @@ namespace corpc
 						if (one_event.events & READ)
 						{
 							// LogDebug("socket [" << fd << "] occur read event");
-							activeCors.push_back(ptr->getCoroutine());
+							active_tasks.push_back(ptr->getCoroutine());
 						}
 						if (one_event.events & WRITE)
 						{
 							// LogDebug("socket [" << fd << "] occur write event");
-							activeCors.push_back(ptr->getCoroutine());
+							active_tasks.push_back(ptr->getCoroutine());
 						}
 					}
 				}
 			}
-			if (actEvNum == static_cast<int>(m_activeEpollEvents.size()))
+			if (actEvNum == static_cast<int>(m_active_epoll_events.size()))
 			{
 				// 若从epoll中获取事件的数组满了，说明这个数组的大小可能不够，扩展一倍
-				m_activeEpollEvents.resize(m_activeEpollEvents.size() * 2);
+				m_active_epoll_events.resize(m_active_epoll_events.size() * 2);
 			}
 		}
 	}

@@ -43,35 +43,37 @@ namespace corpc
 
 		void wakeup();
 
-		// 获取被激活的事件服务
-		void getActiveTasks(int timeOutMs, std::vector<Coroutine *> &activeCors);
+		// Obtain the activated event coroutines
+		void getActiveTasks(int timeOutMs, std::vector<Coroutine *> &active_tasks);
 
 	public:
-		inline void setTimerfd(int timer_fd)
+		inline void setTimerFd(int timer_fd)
 		{
 			m_timer_fd = timer_fd;
 		}
 
 		inline bool isEpollFdUseful()
 		{
-			return m_epollFd < 0 ? false : true;
+			return m_epoll_fd < 0 ? false : true;
 		}
 
 	public:
-		std::vector<int> m_fds; // already care events
+		// already care events
+		std::vector<int> m_fds;
 
 	private:
 		int m_timer_fd;
 
-		int m_wake_fd{-1}; // wakeup fd
+		int m_wake_fd{-1};
 
-		int m_epollFd;
+		int m_epoll_fd;
 
 		// std::mutex m_mutex;
 
-		corpc::Processor *m_processor = nullptr;
+		Processor *m_processor = nullptr;
 
-		std::vector<struct epoll_event> m_activeEpollEvents;
+		// Store active events returned by epoll_wait
+		std::vector<struct epoll_event> m_active_epoll_events;
 	};
 
 }

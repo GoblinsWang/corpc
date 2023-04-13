@@ -14,27 +14,33 @@ namespace corpc
     FdEvent::ptr FdEventContainer::getFdEvent(int fd)
     {
 
-        m_mutex.rlock(); // 读锁
+        // readlock
+        m_mutex.rlock();
         corpc::FdEvent::ptr res;
         if (fd < static_cast<int>(m_fds.size()))
         {
             res = m_fds[fd];
-            m_mutex.runlock(); // 释放读锁
+            // release readlock
+            m_mutex.runlock();
             return res;
         }
-        m_mutex.runlock(); // 读锁
+        // release readlock
+        m_mutex.runlock();
 
-        m_mutex.wlock(); // 写锁
-        /*
-            对文件描述数组进行1.5倍扩容
-        */
+        // writelock
+        m_mutex.wlock();
+
+        // Expand the file description array by 1.5 times.
         int n = (int)(fd * 1.5);
         for (int i = m_fds.size(); i < n; ++i)
         {
             m_fds.push_back(std::make_shared<FdEvent>(i));
         }
+
         res = m_fds[fd];
-        m_mutex.wunlock(); // 写锁
+        // release writelock
+        m_mutex.wunlock();
+
         return res;
     }
 

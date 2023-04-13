@@ -43,11 +43,8 @@ namespace corpc
 
 		DISALLOW_COPY_MOVE_AND_ASSIGN(Processor);
 
+		// wait event on fd
 		void waitEvent(FdEvent::ptr fd_event, int fd, int event);
-
-		void addTask(std::function<void()> task, bool is_wakeup = true);
-
-		void addTask(std::vector<std::function<void()>> task, bool is_wakeup = true);
 
 		Coroutine *getNewCoroutine(std::function<void()> &&func, size_t stackSize = parameter::coroutineStackSize);
 
@@ -74,11 +71,11 @@ namespace corpc
 
 	public:
 		// Obtain the currently running coroutine
-		inline Coroutine *getCurRunningCo() { return m_pCurCoroutine; };
+		inline Coroutine *getCurRunningCo() { return m_cur_coroutine; };
 
-		inline Context *getMainCtx() { return &m_mainCtx; }
+		inline Context *getMainCtx() { return &m_main_ctx; }
 
-		inline size_t getCoCnt() { return m_coSet.size(); }
+		inline size_t getCoCnt() { return m_cors_set.size(); }
 
 		inline Epoller *getEpoller()
 		{
@@ -104,29 +101,27 @@ namespace corpc
 		std::mutex m_mutex;
 		std::thread *m_pLoop;
 
-		// std::map<int, epoll_event> m_pending_add_fds;
-		// std::vector<int> m_pending_del_fds;
-		std::vector<std::function<void()>> m_pending_tasks;
-		LockFreeRingBuffer<Coroutine *, 1000> m_newCoroutines;
+		// new coming tasks
+		LockFreeRingBuffer<Coroutine *, 1000> m_pending_tasks;
 
 		// List of active events discovered by EventEpoller
-		std::vector<Coroutine *> m_actCoroutines;
+		std::vector<Coroutine *> m_active_tasks;
 
 		// The collection of all unfinished coroutines on this thread
-		std::set<Coroutine *> m_coSet;
+		std::set<Coroutine *> m_cors_set;
 
 		// The list of removed coroutines will first be placed in the list to remove an event, and only after one loop is completed will it be truly deleted
-		std::vector<Coroutine *> m_removedCo;
+		std::vector<Coroutine *> m_removed_cors;
 
 		// Lock for objPool
-		Spinlock m_coPoolLock;
+		Spinlock m_cor_pool_lock;
 
 		// objPool
-		ObjPool<Coroutine> m_copool;
+		ObjPool<Coroutine> m_cor_pool;
 
-		Coroutine *m_pCurCoroutine;
+		Coroutine *m_cur_coroutine;
 
-		Context m_mainCtx;
+		Context m_main_ctx;
 	};
 
 }

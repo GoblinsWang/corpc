@@ -16,9 +16,9 @@ namespace corpc
 	__thread int threadIdx = -1;
 
 	Processor::Processor(int tid)
-		: m_tid(tid), m_status(PRO_STOPPED), m_pLoop(nullptr), m_pCurCoroutine(nullptr), m_mainCtx(0)
+		: m_tid(tid), m_status(PRO_STOPPED), m_pLoop(nullptr), m_cur_coroutine(nullptr), m_main_ctx(0)
 	{
-		m_mainCtx.makeCurContext();
+		m_main_ctx.makeCurContext();
 	}
 
 	Processor::~Processor()
@@ -35,17 +35,17 @@ namespace corpc
 		{
 			delete m_pLoop;
 		}
-		for (auto co : m_coSet)
+		for (auto co : m_cors_set)
 		{
 			delete co;
 		}
 	}
-	// wait event on fd
+
 	void Processor::waitEvent(FdEvent::ptr fd_event, int fd, int event)
 	{
 		// LogDebug("in waitEvent, fd = " << fd);
 
-		fd_event->setCoroutine(m_pCurCoroutine);
+		fd_event->setCoroutine(m_cur_coroutine);
 		m_epoller->addEvent(fd_event.get(), fd, event);
 
 		yield();
@@ -54,44 +54,13 @@ namespace corpc
 		fd_event->clearCoroutine();
 	}
 
-	void Processor::addTask(std::function<void()> task, bool is_wakeup /*=true*/)
-	{
-		LogDebug("in addTask()");
-		{
-			std::lock_guard<std::mutex> lock(m_mutex);
-			m_pending_tasks.push_back(task);
-		}
-		if (is_wakeup)
-		{
-			m_epoller->wakeup();
-		}
-	}
-
-	void Processor::addTask(std::vector<std::function<void()>> task, bool is_wakeup /* =true*/)
-	{
-		LogDebug("in addTask()");
-		if (task.size() == 0)
-		{
-			return;
-		}
-
-		{
-			std::lock_guard<std::mutex> lock(m_mutex);
-			m_pending_tasks.insert(m_pending_tasks.end(), task.begin(), task.end());
-		}
-		if (is_wakeup)
-		{
-			m_epoller->wakeup();
-		}
-	}
-
 	Coroutine *Processor::getNewCoroutine(std::function<void()> &&coFunc, size_t stackSize)
 	{
 		Coroutine *pCo = nullptr;
 
 		{
-			SpinlockGuard lock(m_coPoolLock);
-			pCo = m_copool.new_obj(std::move(coFunc), stackSize);
+			SpinlockGuard lock(m_cor_pool_lock);
+			pCo = m_cor_pool.new_obj(std::move(coFunc), stackSize);
 		}
 		return pCo;
 	}
@@ -100,8 +69,8 @@ namespace corpc
 		Coroutine *pCo = nullptr;
 
 		{
-			SpinlockGuard lock(m_coPoolLock);
-			pCo = m_copool.new_obj(coFunc, stackSize);
+			SpinlockGuard lock(m_cor_pool_lock);
+			pCo = m_cor_pool.new_obj(coFunc, stackSize);
 		}
 		return pCo;
 	}
@@ -109,7 +78,7 @@ namespace corpc
 	void Processor::addCoroutine(corpc::Coroutine *pCo, bool is_wakeup /*=true*/)
 	{
 		pCo->setProcessor(this);
-		m_newCoroutines.push(pCo);
+		m_pending_tasks.push(pCo);
 
 		if (is_wakeup)
 		{
@@ -125,28 +94,28 @@ namespace corpc
 			return;
 		}
 
-		if (m_coSet.find(pCo) == m_coSet.end())
+		if (m_cors_set.find(pCo) == m_cors_set.end())
 		{
 			return;
 		}
 		// LogInfo("in Processor::resume()");
-		m_pCurCoroutine = pCo;
+		m_cur_coroutine = pCo;
 		pCo->resume();
 	}
 
 	void Processor::yield()
 	{
-		m_pCurCoroutine->yield();
+		m_cur_coroutine->yield();
 		/*
 			Switch to the main thread and then save the context of the current coroutine into the object of the current coroutine.
 		*/
-		m_mainCtx.swapToMe(m_pCurCoroutine->getCtx());
+		m_main_ctx.swapToMe(m_cur_coroutine->getCtx());
 	}
 
 	void Processor::wait(int64_t interval)
 	{
-		m_pCurCoroutine->yield();
-		Coroutine *cor = m_pCurCoroutine;
+		m_cur_coroutine->yield();
+		Coroutine *cor = m_cur_coroutine;
 		auto event_cb = [this, cor]()
 		{
 			this->resume(cor);
@@ -156,7 +125,7 @@ namespace corpc
 		/*
 			Switch to the main thread and then save the context of the current coroutine into the object of the current coroutine.
 		*/
-		m_mainCtx.swapToMe(m_pCurCoroutine->getCtx());
+		m_main_ctx.swapToMe(m_cur_coroutine->getCtx());
 	}
 
 	bool Processor::loop()
@@ -168,7 +137,7 @@ namespace corpc
 			return false;
 		}
 		m_timer = std::make_shared<Timer>(this);
-		m_epoller->setTimerfd(m_timer->getFd());
+		m_epoller->setTimerFd(m_timer->getFd());
 
 		// initial loop
 		m_pLoop = new std::thread(
@@ -179,40 +148,40 @@ namespace corpc
 				while (PRO_RUNNING == m_status)
 				{
 					// clear actCors vec
-					if (m_actCoroutines.size())
+					if (m_active_tasks.size())
 					{
-						m_actCoroutines.clear();
+						m_active_tasks.clear();
 					}
 					// get active tasks
-					m_epoller->getActiveTasks(parameter::epollTimeOutMs, m_actCoroutines);
+					m_epoller->getActiveTasks(parameter::epollTimeOutMs, m_active_tasks);
 
 					// execute new coming coroutines
 					Coroutine *pNewCo = nullptr;
-					while (m_newCoroutines.pop(pNewCo))
+					while (m_pending_tasks.pop(pNewCo))
 					{
-						LogDebug("in exec m_newCoroutines");
-						m_coSet.insert(pNewCo);
+						LogDebug("in exec m_pending_tasks");
+						m_cors_set.insert(pNewCo);
 						resume(pNewCo);
 					}
 
 					// execute the awakened coroutines
-					size_t actCoCnt = m_actCoroutines.size();
+					size_t actCoCnt = m_active_tasks.size();
 					for (size_t i = 0; i < actCoCnt; ++i)
 					{
-						resume(m_actCoroutines[i]);
+						resume(m_active_tasks[i]);
 					}
 
 					// clear completed coroutines
-					for (auto deadCo : m_removedCo)
+					for (auto deadCo : m_removed_cors)
 					{
-						m_coSet.erase(deadCo);
+						m_cors_set.erase(deadCo);
 						LogDebug("delete deadCo");
 						{
-							SpinlockGuard lock(m_coPoolLock);
-							m_copool.delete_obj(deadCo);
+							SpinlockGuard lock(m_cor_pool_lock);
+							m_cor_pool.delete_obj(deadCo);
 						}
 					}
-					m_removedCo.clear();
+					m_removed_cors.clear();
 				}
 				m_status = PRO_STOPPED;
 			});
@@ -231,7 +200,7 @@ namespace corpc
 
 	void Processor::killCurCo()
 	{
-		m_removedCo.push_back(m_pCurCoroutine);
+		m_removed_cors.push_back(m_cur_coroutine);
 	}
 
 	bool Processor::isLoopThread() const

@@ -68,6 +68,7 @@ namespace corpc
 
     private:
         RWMutex m_mutex;
+
         std::vector<FdEvent::ptr> m_fds;
     };
 
