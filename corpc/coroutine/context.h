@@ -45,17 +45,16 @@ namespace corpc
 
 		Context &operator=(const Context &otherCtx) = delete;
 
-		// 用函数指针设置当前context的上下文入口
+		// Use the function pointer to set the context entry of the current context
 		void makeContext(void (*func)(), Processor *, Context *);
 
-		// 直接用当前程序状态设置当前context的上下文
+		// Directly use the current program state to set the context of the current context
 		void makeCurContext();
 
-		// 将当前上下文保存到oldCtx中，然后切换到当前上下文，若oldCtx为空，则直接运行
+		// Save the current context to oldCtx and switch to the current context
 		void swapToMe(Context *pOldCtx);
 
-		// 获取当前上下文的ucontext_t指针
-		// inline struct ucontext_t *getUCtx() { return &m_coctx; };
+		// Gets the coctx pointer for the current context
 		inline struct coctx *getUCtx() { return &m_coctx; };
 
 	private:

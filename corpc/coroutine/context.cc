@@ -83,9 +83,9 @@ namespace corpc
 		//   */
 		// 	swapcontext(pOldCtx->getUCtx(), &m_coctx);
 		// }
-		LogDebug("in Context::swapToMe()");
+		// LogDebug("in Context::swapToMe()");
 		coctx_swap(&(pOldCtx->m_coctx), &m_coctx);
-		LogDebug("after coctx_swap()");
+		// LogDebug("after coctx_swap()");
 	}
 
 }

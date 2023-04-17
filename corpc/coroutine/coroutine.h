@@ -36,20 +36,22 @@ namespace corpc
 
 		DISALLOW_COPY_MOVE_AND_ASSIGN(Coroutine);
 
-		// 恢复运行当前协程
+		// resume running the current coroutine
 		void resume();
 
-		// 暂停运行当前协程
+		// pause the current coroutine
 		void yield();
 
+		// set the processor to facilitate coroutine switching
 		void setProcessor(Processor *);
 
-		Processor *getMyProcessor() { return m_processor; }
+	public:
+		inline Processor *getMyProcessor() { return m_processor; }
 
-		// 运行该协程的函数
+		// run the function of this coroutine
 		inline void startFunc() { m_coFunc(); };
 
-		// 获取该协程的上下文
+		// obtain the context of the coroutine
 		inline Context *getCtx() { return &m_ctx; }
 
 	private:
