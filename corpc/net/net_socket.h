@@ -7,9 +7,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <memory>
-#include "../coroutine/utils.h"
-#include "../coroutine/parameter.h"
-#include "../log/logger.h"
+#include "common.h"
 #include "net_address.h"
 
 namespace corpc
@@ -28,34 +26,22 @@ namespace corpc
 
 		~NetSocket();
 
+		// close socket write operations
+		int shutdownWrite();
+
 		void setTcpNoDelay(bool on);
 
 		void setReuseAddr(bool on);
 
 		void setReusePort(bool on);
 
-		// accept a new conn, return connfd;
-		int accept();
-
-		// for client
-		int connect();
-
-		// 从socket中读数据
-		ssize_t read(void *buf, size_t count);
-
-		// 往socket中写数据
-		ssize_t send(const void *buf, size_t count);
-
-		// 关闭套接字的写操作
-		int shutdownWrite();
-
-		// 设置是否使用心跳检测
+		// set whether to use the activation mechanism
 		int setKeepAlive(bool on);
 
-		// 设置socket为非阻塞的
+		// set socket to non blocking
 		int setNonBolckSocket();
 
-		// 设置socket为阻塞的
+		// Set socket to blocked
 		int setBlockSocket();
 
 		inline NetAddress::ptr getPeerAddr()
@@ -72,6 +58,22 @@ namespace corpc
 		{
 			return m_fd;
 		}
+
+	public:
+		/*
+			The following functions have been modified to the native functions to adapt to the coroutine framework
+		*/
+		// accept a new conn, return connfd;
+		int accept();
+
+		// for client to connect remote server
+		int connect();
+
+		// read data from socket
+		ssize_t read(void *buf, size_t count);
+
+		// write data to socket
+		ssize_t send(const void *buf, size_t count);
 
 	private:
 		int m_fd;

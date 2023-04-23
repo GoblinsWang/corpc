@@ -7,7 +7,7 @@
 #include <string.h>
 #include <sstream>
 #include "net_address.h"
-#include "../log/logger.h"
+#include "common.h"
 
 namespace corpc
 {

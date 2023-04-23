@@ -8,4 +8,5 @@
 #include "../coroutine/fd_event.h"
 #include "../coroutine/timer.h"
 #include "../coroutine/co_api.h"
+#include "../coroutine/parameter.h"
 #endif

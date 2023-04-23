@@ -1,6 +1,3 @@
-#include "net_socket.h"
-#include "../coroutine/scheduler.h"
-
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
@@ -8,10 +5,11 @@
 #include <fcntl.h>
 #include <string.h>
 #include <sys/epoll.h>
+#include "net_socket.h"
 
 namespace corpc
 {
-	int m_max_connect_timeout = 60; // 60s
+	int m_max_connect_timeout = 30; // 30s
 
 	NetSocket::NetSocket(NetAddress::ptr addr)
 	{
@@ -167,7 +165,6 @@ namespace corpc
 		return -1;
 	}
 
-	// 从socket中读数据
 	ssize_t NetSocket::read(void *buf, size_t count)
 	{
 		auto ret = ::read(m_fd, buf, count);
@@ -185,7 +182,6 @@ namespace corpc
 		return ::read(m_fd, buf, count);
 	}
 
-	// 往socket中写数据
 	ssize_t NetSocket::send(const void *buf, size_t count)
 	{
 		// 忽略SIGPIPE信号
@@ -245,7 +241,6 @@ namespace corpc
 		return ret;
 	}
 
-	// 设置socket为非阻塞的
 	int NetSocket::setNonBolckSocket()
 	{
 		auto flags = fcntl(m_fd, F_GETFL, 0);
@@ -253,7 +248,6 @@ namespace corpc
 		return ret;
 	}
 
-	// 设置socket为阻塞的
 	int NetSocket::setBlockSocket()
 	{
 		auto flags = fcntl(m_fd, F_GETFL, 0);

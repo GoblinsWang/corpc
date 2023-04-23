@@ -48,17 +48,17 @@ namespace corpc
 
         socklen_t getSockLen() const;
 
-        std::string getIP() const
+    public:
+        inline std::string getIP() const
         {
             return m_ip;
         }
 
-        int getPort() const
+        inline int getPort() const
         {
             return m_port;
         }
 
-    public:
         static bool CheckValidIPAddr(const std::string &addr);
 
     private:
@@ -81,12 +81,13 @@ namespace corpc
 
         socklen_t getSockLen() const;
 
-        std::string getPath() const
+        std::string toString() const;
+
+    public:
+        inline std::string getPath() const
         {
             return m_path;
         }
-
-        std::string toString() const;
 
     private:
         std::string m_path = "";
