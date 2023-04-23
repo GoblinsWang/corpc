@@ -2,8 +2,8 @@
 	@author: Wangzhiming
 	@date: 2022-10-29
 ***/
-#ifndef CORPC_COROUTINE_SPINLOCK_GUARD_H
-#define CORPC_COROUTINE_SPINLOCK_GUARD_H
+#ifndef CORPC_COROUTINE_SPINm_lockGUARD_H
+#define CORPC_COROUTINE_SPINm_lockGUARD_H
 #include "spinlock.h"
 #include "utils.h"
 
@@ -15,20 +15,20 @@ namespace corpc
 	{
 	public:
 		SpinlockGuard(Spinlock &l)
-			: lock_(l)
+			: m_lock(l)
 		{
-			lock_.lock();
+			m_lock.lock();
 		}
 
 		~SpinlockGuard()
 		{
-			lock_.unlock();
+			m_lock.unlock();
 		}
 
 		DISALLOW_COPY_MOVE_AND_ASSIGN(SpinlockGuard);
 
 	private:
-		Spinlock &lock_;
+		Spinlock &m_lock;
 	};
 
 }
