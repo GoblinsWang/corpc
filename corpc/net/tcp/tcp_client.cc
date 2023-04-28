@@ -68,6 +68,8 @@ namespace corpc
 
         Coroutine *cur_cor = m_processor->getCurRunningCo();
         Processor *pro = m_processor;
+
+        // Callback function for TcpClient connection timeout event
         auto timer_cb = [this, &is_timeout, cur_cor, pro]()
         {
             LogInfo("TcpClient timer out event occur");
