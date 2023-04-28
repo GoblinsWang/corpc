@@ -77,7 +77,6 @@ namespace corpc
         };
         TimerEvent::ptr event = std::make_shared<TimerEvent>(m_max_timeout, false, timer_cb);
         m_processor->getTimer()->addTimerEvent(event);
-
         LogDebug("add corpc timer event, timeout on " << event->m_arrive_time);
 
         while (!is_timeout)
@@ -123,6 +122,7 @@ namespace corpc
             }
         }
 
+        // If the loop above exits due to timeout, it will enter this judgment
         if (m_connection->getState() != Connected)
         {
             std::stringstream ss;
@@ -132,8 +132,12 @@ namespace corpc
             return ERROR_FAILED_CONNECT;
         }
 
+        // Establishing a client connection，
         m_connection->setUpClient();
+
+        // Directly send the data provided by the upper layer
         m_connection->output();
+
         if (m_connection->getOverTimerFlag())
         {
             LogInfo("send data over time");

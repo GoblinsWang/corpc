@@ -174,7 +174,7 @@ namespace corpc
         if (m_connection_type == ServerConnection)
         {
             int64_t now = getNowMs();
-            // 超过时间轮间隔，才fresh
+            // Fresh only after exceeding the time wheel interval
             if (now - getLastActiveTime() >= m_tcp_svr->getTimeWheel()->getInterval())
             {
                 TcpTimeWheel::TcpConnectionSlot::ptr tmp = m_weak_slot.lock();
