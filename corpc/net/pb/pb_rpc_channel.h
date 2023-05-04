@@ -9,24 +9,24 @@
 namespace corpc
 {
 
-  class PbRpcChannel : public google::protobuf::RpcChannel
-  {
+	class PbRpcChannel : public google::protobuf::RpcChannel
+	{
 
-  public:
-    typedef std::shared_ptr<PbRpcChannel> ptr;
-    PbRpcChannel(NetAddress::ptr addr);
-    ~PbRpcChannel() = default;
+	public:
+		typedef std::shared_ptr<PbRpcChannel> ptr;
+		PbRpcChannel(NetAddress::ptr addr);
+		~PbRpcChannel() = default;
 
-    // virtual method
-    void CallMethod(const google::protobuf::MethodDescriptor *method,
-                    google::protobuf::RpcController *controller,
-                    const google::protobuf::Message *request,
-                    google::protobuf::Message *response,
-                    google::protobuf::Closure *done);
+		// virtual method
+		void CallMethod(const google::protobuf::MethodDescriptor *method,
+						google::protobuf::RpcController *controller,
+						const google::protobuf::Message *request,
+						google::protobuf::Message *response,
+						google::protobuf::Closure *done);
 
-  private:
-    NetAddress::ptr m_addr;
-  };
+	private:
+		NetAddress::ptr m_addr;
+	};
 
 }
 

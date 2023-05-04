@@ -134,7 +134,7 @@ namespace corpc
             return ERROR_FAILED_CONNECT;
         }
 
-        // Establishing a client connection，
+        // Establishing a client connection
         m_connection->setUpClient();
 
         // Directly send the data provided by the upper layer

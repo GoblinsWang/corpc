@@ -9,26 +9,26 @@
 namespace corpc
 {
 
-    class PbCodeC : public AbstractCodeC
-    {
-    public:
-        // typedef std::shared_ptr<PbCodeC> ptr;
+	class PbCodeC : public AbstractCodeC
+	{
+	public:
+		// typedef std::shared_ptr<PbCodeC> ptr;
 
-        PbCodeC();
+		PbCodeC();
 
-        ~PbCodeC();
+		~PbCodeC();
 
-        // overwrite
-        void encode(TcpBuffer *buf, AbstractData *data);
+		// overwrite
+		void encode(TcpBuffer *buf, AbstractData *data);
 
-        // overwrite
-        void decode(TcpBuffer *buf, AbstractData *data);
+		// overwrite
+		void decode(TcpBuffer *buf, AbstractData *data);
 
-        // overwrite
-        virtual ProtocalType getProtocalType();
+		// overwrite
+		virtual ProtocalType getProtocalType();
 
-        const char *encodePbData(PbStruct *data, int &len);
-    };
+		const char *encodePbData(PbStruct *data, int &len);
+	};
 
 }
 
